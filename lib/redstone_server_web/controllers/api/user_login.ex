@@ -2,6 +2,7 @@ defmodule RedstoneServerWeb.Api.UserAuth do
   use RedstoneServerWeb, :controller
 
   import RedstoneServerWeb.Api.Schemas.UserLogin, only: [validate_user_login: 1]
+  alias RedstoneServer.Accounts.User
   alias RedstoneServer.Accounts
   alias RedstoneServerWeb.UserAuth
 
@@ -11,26 +12,33 @@ defmodule RedstoneServerWeb.Api.UserAuth do
         valid?: true,
         changes: %{email: email, password: password}
       } ->
-        user = Accounts.get_user_by_email_and_password(email, password)
-        token = Accounts.generate_user_session_token(user)
+        case Accounts.get_user_by_email_and_password(email, password) do
+          %User{} = user ->
+            token = Accounts.generate_user_session_token(user)
+
+            conn
+            |> UserAuth.write_login_cookies(token)
+            |> send_resp(200, "")
+
+          nil ->
+            conn
+            |> send_resp(403, "")
+        end
+
+      changeset ->
         conn
-          |> UserAuth.write_login_cookies(token)
-          |> send_resp(200, "")
-      changeset -> 
-        conn
-          |> put_status(:unprocessable_entity)
-          |> render(RedstoneServerWeb.ErrorView, "error.json", changeset: changeset)
+        |> put_status(:unprocessable_entity)
+        |> render(RedstoneServerWeb.ErrorView, "error.json", changeset: changeset)
     end
   end
 
   def logout(conn, _params) do
-      conn
-      |> UserAuth.log_out_user()
-      |> send_resp(200, "")
+    conn
+    |> UserAuth.log_out_user()
+    |> send_resp(200, "")
   end
 
   def test_auth(conn, _params) do
     send_resp(conn, 200, "")
   end
-  
 end

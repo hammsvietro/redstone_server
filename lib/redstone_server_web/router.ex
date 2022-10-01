@@ -32,9 +32,9 @@ defmodule RedstoneServerWeb.Router do
   end
 
   ## Authentication routes
-  
+
   scope "/api", RedstoneServerWeb.Api do
-    pipe_through [:api, :require_authenticated_user_api] 
+    pipe_through [:api, :require_authenticated_user_api]
     get "/auth_test", UserAuth, :test_auth
     delete "/log_out", UserAuth, :logout
   end

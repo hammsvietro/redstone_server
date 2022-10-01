@@ -14,9 +14,9 @@ defmodule RedstoneServerWeb.UserAuth do
 
   def write_login_cookies(conn, token) do
     conn
-      |> renew_session()
-      |> put_session(:user_token, token)
-      |> write_remember_me_cookie(token)
+    |> renew_session()
+    |> put_session(:user_token, token)
+    |> write_remember_me_cookie(token)
   end
 
   @doc """
@@ -148,7 +148,7 @@ defmodule RedstoneServerWeb.UserAuth do
       |> halt()
     end
   end
-  
+
   def require_authenticated_user_api(conn, _opts) do
     if conn.assigns[:current_user] do
       conn
@@ -157,7 +157,6 @@ defmodule RedstoneServerWeb.UserAuth do
       |> put_status(404)
       |> json(%{error: "Not allowed"})
       |> halt()
-
     end
   end
 
