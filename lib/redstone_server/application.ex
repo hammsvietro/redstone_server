@@ -16,9 +16,10 @@ defmodule RedstoneServer.Application do
       {Phoenix.PubSub, name: RedstoneServer.PubSub},
       # Start the Endpoint (http/https)
       RedstoneServerWeb.Endpoint,
-      # Start a worker by calling: RedstoneServer.Worker.start_link(arg)
-      # {RedstoneServer.Worker, arg}
-      {RedstoneServer.Udp, 13098}
+      # Start the Tcp server
+      {RedstoneServerWeb.Tcp.Server, 8000},
+      # Start dynamic supervisor for handling tcp connection
+      {DynamicSupervisor, strategy: :one_for_one, name: RedstoneServer.TcpConnectionSupervisor},
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
