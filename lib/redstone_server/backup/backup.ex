@@ -6,10 +6,10 @@ defmodule RedstoneServer.Backup.Backup do
   @foreign_key_type :binary_id
   schema "backups" do
     field :name, :string
-    field :relative_path, :string
-    field :sync_every, :string
-    field :watch, :boolean, default: false
-    field :user_id, :binary_id
+    belongs_to :user, RedstoneServer.Accounts.User
+    has_many :updates, RedstoneServer.Backup.Update
+    has_many :folders, RedstoneServer.Backup.Folder
+    has_many :files, RedstoneServer.Backup.Files
 
     timestamps()
   end
@@ -17,7 +17,7 @@ defmodule RedstoneServer.Backup.Backup do
   @doc false
   def changeset(backup, attrs) do
     backup
-    |> cast(attrs, [:name, :watch, :sync_every, :relative_path])
-    |> validate_required([:name, :watch, :sync_every, :relative_path])
+    |> cast(attrs, [:name])
+    |> validate_required([:name])
   end
 end
