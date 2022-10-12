@@ -37,6 +37,10 @@ defmodule RedstoneServerWeb.Router do
     pipe_through [:api, :require_authenticated_user_api]
     get "/auth_test", UserAuth, :test_auth
     delete "/log_out", UserAuth, :logout
+
+    scope "/upload" do
+      post "/declare", Upload, :declare
+    end
   end
 
   scope "/", RedstoneServerWeb.Html do
