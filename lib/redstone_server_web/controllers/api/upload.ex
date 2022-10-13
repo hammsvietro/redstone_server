@@ -1,23 +1,30 @@
 defmodule RedstoneServerWeb.Api.Upload do
   use RedstoneServerWeb, :controller
-  
-  def declare(conn, params) do
-    params["files"]
-      |> IO.inspect()
-      |> get_total_size
-      |> IO.inspect()
+  alias RedstoneServerWeb.Api.Schemas.Upload, as: UploadValidators
 
-    conn |> send_resp(200, "")
+  def declare(conn, params) do
+    case UploadValidators.validate_backup(params) do
+      %{
+        valid?: true,
+        changes: %{name: name, files: files}
+      } ->
+        RedstoneServer.Backup.create_backup(name, conn.assigns.current_user.id, files)
+        conn |> send_resp(200, "")
+
+      changeset ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> render(RedstoneServerWeb.ErrorView, "error.json", changeset: changeset)
+    end
   end
 
   defp get_total_size(files) do
     files
-      |> Enum.map(fn 
-        %{"File" => file} -> file["size"]
-        %{"Folder" => folder} -> get_total_size(folder["items"]) 
-      end)
-      |> List.flatten
-      |> Enum.sum
+    |> Enum.map(fn
+      %{"File" => file} -> file["size"]
+      %{"Folder" => folder} -> get_total_size(folder["items"])
+    end)
+    |> List.flatten()
+    |> Enum.sum()
   end
-
 end

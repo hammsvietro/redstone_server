@@ -6,10 +6,10 @@ defmodule RedstoneServer.Backup.Backup do
   @foreign_key_type :binary_id
   schema "backups" do
     field :name, :string
-    belongs_to :user, RedstoneServer.Accounts.User
+    belongs_to :created_by, RedstoneServer.Accounts.User
     has_many :updates, RedstoneServer.Backup.Update
     has_many :folders, RedstoneServer.Backup.Folder
-    has_many :files, RedstoneServer.Backup.Files
+    has_many :files, RedstoneServer.Backup.File
 
     timestamps()
   end
@@ -17,7 +17,8 @@ defmodule RedstoneServer.Backup.Backup do
   @doc false
   def changeset(backup, attrs) do
     backup
-    |> cast(attrs, [:name])
+    |> cast(attrs, [:name, :created_by_id])
+    |> foreign_key_constraint(:created_by_id)
     |> validate_required([:name])
   end
 end

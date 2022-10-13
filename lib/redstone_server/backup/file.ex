@@ -8,14 +8,17 @@ defmodule RedstoneServer.Backup.File do
     field :path, :string
     field :sha1_checksum, :string
     belongs_to :folder, RedstoneServer.Backup.Folder
+    belongs_to :backup, RedstoneServer.Backup.Backup
 
     timestamps()
   end
 
   @doc false
-  def changeset(file, attrs) do
+  def insert_changeset(file, attrs) do
     file
-    |> cast(attrs, [:path, :sha1_checksum])
+    |> cast(attrs, [:path, :sha1_checksum, :folder_id, :backup_id])
+    |> foreign_key_constraint(:folder_id)
+    |> foreign_key_constraint(:backup_id)
     |> validate_required([:path, :sha1_checksum])
   end
 end

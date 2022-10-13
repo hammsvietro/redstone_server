@@ -7,6 +7,7 @@ defmodule RedstoneServer.Backup.Update do
   schema "updates" do
     field :hash, :string
     field :message, :string
+    field :transaction_completed, :boolean
     belongs_to :made_by, RedstoneServer.Accounts.User
     belongs_to :backup, RedstoneServer.Backup.Backup
 

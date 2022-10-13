@@ -6,18 +6,18 @@ defmodule RedstoneServer.Backup.Folder do
   @foreign_key_type :binary_id
   schema "folders" do
     field :path, :string
-    field :backup_id, :binary_id
-    field :parent_id, :binary_id
+    belongs_to :backup, RedstoneServer.Backup.Backup
     belongs_to :parent, RedstoneServer.Backup.Folder
-    has_many :files, RedstoneServer.Backup.Files
+    has_many :files, RedstoneServer.Backup.File
 
     timestamps()
   end
 
   @doc false
-  def changeset(folder, attrs) do
+  def insert_changeset(folder, attrs) do
     folder
-    |> cast(attrs, [:path])
+    |> cast(attrs, [:path, :backup_id, :parent_id])
+    |> foreign_key_constraint(:backup_id)
     |> validate_required([:path])
   end
 end

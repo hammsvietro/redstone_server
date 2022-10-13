@@ -2,14 +2,14 @@ defmodule RedstoneServerWeb.Tcp.ConnectionHandler do
   use GenServer
   require Logger
 
-  @initial_state %{socket: nil, last_msg: nil} 
+  @initial_state %{socket: nil, last_msg: nil}
 
   def start_link(socket, opts \\ []) do
     GenServer.start_link(__MODULE__, socket, opts)
   end
 
   def init(socket) do
-    {:ok, %{ @initial_state | socket: socket }}
+    {:ok, %{@initial_state | socket: socket}}
   end
 
   # TCP callbacks
@@ -18,9 +18,10 @@ defmodule RedstoneServerWeb.Tcp.ConnectionHandler do
     {:noreply, %{socket: socket, last_msg: data}}
   end
 
-  def handle_info({:tcp_closed, _}, state) do 
+  def handle_info({:tcp_closed, _}, state) do
     {:stop, :normal, state}
   end
+
   def handle_info({:tcp_error, _}, state) do
     # fallback file update transaction
     {:stop, :normal, state}
