@@ -6,9 +6,9 @@ defmodule RedstoneServer.Backup.Backup do
   @foreign_key_type :binary_id
   schema "backups" do
     field :name, :string
+    field :entrypoint, :string
     belongs_to :created_by, RedstoneServer.Accounts.User
     has_many :updates, RedstoneServer.Backup.Update
-    has_many :folders, RedstoneServer.Backup.Folder
     has_many :files, RedstoneServer.Backup.File
 
     timestamps()

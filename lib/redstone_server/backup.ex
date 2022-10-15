@@ -5,7 +5,7 @@ defmodule RedstoneServer.Backup do
   alias Ecto.Multi
 
   alias RedstoneServer.Repo
-  alias RedstoneServer.Backup.{Backup, File, Folder}
+  alias RedstoneServer.Backup.{Backup, File, Update}
 
   def create_backup(name, user_id, files) do
     Multi.new()
@@ -16,43 +16,37 @@ defmodule RedstoneServer.Backup do
         "created_by_id" => user_id
       })
     )
+    |> Multi.insert(:update, fn %{backup: backup} ->
+      RedstoneServer.Backup.Update.insert_changeset(%Update{}, %{
+        "backup_id" => backup.id,
+        "made_by_id" => user_id,
+        "message" => "Bootstrap",
+        "hash" => generate_hash()
+      })
+    end)
     |> store_file_tree(files)
     |> Repo.transaction()
   end
 
-  def store_file_tree(multi, files, parent_path \\ nil) do
+  def store_file_tree(multi, files) do
     Enum.reduce(files, multi, fn
-      %{"File" => file}, multi ->
+      file, multi ->
         multi
         |> Multi.insert(file["path"], fn
-          %{^parent_path => folder, backup: backup} ->
+          %{backup: backup} ->
             File.insert_changeset(
               %File{},
               %{
                 "path" => file["path"],
                 "sha1_checksum" => file["sha_256_digest"],
-                "folder_id" => folder.id,
                 "backup_id" => backup.id
               }
             )
         end)
-
-      %{"Folder" => folder}, multi ->
-        multi
-        |> Multi.insert(folder["path"], fn
-          %{^parent_path => parent, backup: backup} ->
-            Folder.insert_changeset(
-              %Folder{},
-              %{"backup_id" => backup.id, "parent_id" => parent.id, "path" => folder["path"]}
-            )
-
-          %{backup: backup} ->
-            Folder.insert_changeset(%Folder{}, %{
-              "backup_id" => backup.id,
-              "path" => folder["path"]
-            })
-        end)
-        |> store_file_tree(folder["items"], folder["path"])
     end)
+  end
+
+  defp generate_hash() do
+    :crypto.hash(:sha, [:crypto.strong_rand_bytes(4)]) |> Base.encode16() |> String.downcase()
   end
 end

@@ -7,12 +7,10 @@ defmodule RedstoneServer.Repo.Migrations.CreateFiles do
       add :path, :string
       add :sha1_checksum, :string
       add :backup_id, references(:backups, on_delete: :nothing, type: :binary_id)
-      add :folder_id, references(:folders, on_delete: :nothing, type: :binary_id)
 
       timestamps()
     end
 
     create index(:files, [:backup_id])
-    create index(:files, [:folder_id])
   end
 end

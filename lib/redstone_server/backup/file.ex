@@ -7,7 +7,6 @@ defmodule RedstoneServer.Backup.File do
   schema "files" do
     field :path, :string
     field :sha1_checksum, :string
-    belongs_to :folder, RedstoneServer.Backup.Folder
     belongs_to :backup, RedstoneServer.Backup.Backup
 
     timestamps()
@@ -16,9 +15,8 @@ defmodule RedstoneServer.Backup.File do
   @doc false
   def insert_changeset(file, attrs) do
     file
-    |> cast(attrs, [:path, :sha1_checksum, :folder_id, :backup_id])
+    |> cast(attrs, [:path, :sha1_checksum, :backup_id])
     |> foreign_key_constraint(:folder_id)
-    |> foreign_key_constraint(:backup_id)
     |> validate_required([:path, :sha1_checksum])
   end
 end
