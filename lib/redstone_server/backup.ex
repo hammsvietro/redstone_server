@@ -2,8 +2,9 @@ defmodule RedstoneServer.Backup do
   @moduledoc """
   Data access layer for the backup context
   """
-  alias Ecto.Multi
+  import Ecto.Query
 
+  alias Ecto.Multi
   alias RedstoneServer.Repo
   alias RedstoneServer.Backup.{Backup, File, Update}
 
@@ -13,7 +14,8 @@ defmodule RedstoneServer.Backup do
       :backup,
       RedstoneServer.Backup.Backup.changeset(%Backup{}, %{
         "name" => name,
-        "created_by_id" => user_id
+        "created_by_id" => user_id,
+        "entrypoint" => "CHANGEME"
       })
     )
     |> Multi.insert(:update, fn %{backup: backup} ->
@@ -28,7 +30,14 @@ defmodule RedstoneServer.Backup do
     |> Repo.transaction()
   end
 
-  def store_file_tree(multi, files) do
+  def get_backup(backup_id) do
+    (from b in RedstoneServer.Backup.Backup,
+      where: b.id == ^backup_id,
+      preload: :files)
+    |> Repo.one
+  end
+
+  defp store_file_tree(multi, files) do
     Enum.reduce(files, multi, fn
       file, multi ->
         multi

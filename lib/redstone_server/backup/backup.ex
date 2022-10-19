@@ -2,6 +2,18 @@ defmodule RedstoneServer.Backup.Backup do
   use Ecto.Schema
   import Ecto.Changeset
 
+  defimpl Jason.Encoder, for: RedstoneServer.Backup.Backup do
+    def encode(struct, opts) do
+      Enum.reduce(Map.from_struct(struct), %{}, fn
+        ({_k, %Ecto.Association.NotLoaded{}}, acc) -> acc
+        ({:__meta__, _}, acc) -> acc
+        ({:__struct__, _}, acc) -> acc
+        ({k, v}, acc) -> Map.put(acc, k, v)
+      end)
+      |> Jason.Encode.map(opts)
+    end
+  end
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "backups" do
@@ -17,8 +29,8 @@ defmodule RedstoneServer.Backup.Backup do
   @doc false
   def changeset(backup, attrs) do
     backup
-    |> cast(attrs, [:name, :created_by_id])
+    |> cast(attrs, [:name, :created_by_id, :entrypoint])
     |> foreign_key_constraint(:created_by_id)
-    |> validate_required([:name])
+    |> validate_required([:name, :entrypoint])
   end
 end

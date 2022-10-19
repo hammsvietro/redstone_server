@@ -8,19 +8,20 @@ defmodule RedstoneServerWeb.Api.Upload do
         valid?: true,
         changes: %{name: name, files: files}
       } ->
-        RedstoneServer.Backup.create_backup(name, conn.assigns.current_user.id, files)
+        {:ok, %{backup: backup}} = RedstoneServer.Backup.create_backup(name, conn.assigns.current_user.id, files)
+        backup = RedstoneServer.Backup.get_backup(backup.id)
+        # files
+        # |> get_total_size()
 
-        files
-        |> IO.inspect()
-        |> get_total_size()
-        |> IO.inspect()
-
-        conn |> send_resp(200, "")
+        conn
+        |> put_view(RedstoneServerWeb.Json.UploadView)
+        |> render("show.json", %{backup: backup})
 
       changeset ->
         conn
         |> put_status(400)
-        |> render(RedstoneServerWeb.ErrorView, "error.json", changeset: changeset)
+        |> put_view(RedstoneServerWeb.ErrorView)
+        |> render("error.json", changeset: changeset)
     end
   end
 

@@ -5,6 +5,7 @@ defmodule RedstoneServer.Repo.Migrations.CreateBackups do
     create table(:backups, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :name, :string
+      add :entrypoint, :string
       add :created_by_id, references(:users, on_delete: :nothing, type: :binary_id)
 
       timestamps()
