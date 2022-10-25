@@ -6,7 +6,7 @@ defmodule RedstoneServer.Backup do
 
   alias Ecto.Multi
   alias RedstoneServer.Repo
-  alias RedstoneServer.Backup.{Backup, File, Update}
+  alias RedstoneServer.Backup.{Backup, File, Update, UpdateToken}
 
   def create_backup(name, user_id, files) do
     Multi.new()
@@ -23,7 +23,7 @@ defmodule RedstoneServer.Backup do
         "backup_id" => backup.id,
         "made_by_id" => user_id,
         "message" => "Bootstrap",
-        "hash" => generate_hash()
+        "hash" => RedstoneServer.Crypto.generate_hash()
       })
     end)
     |> store_file_tree(files)
@@ -55,7 +55,65 @@ defmodule RedstoneServer.Backup do
     end)
   end
 
-  defp generate_hash() do
-    :crypto.hash(:sha, [:crypto.strong_rand_bytes(4)]) |> Base.encode16() |> String.downcase()
+  @doc """
+  Returns the list of update_tokens.
+
+  ## Examples
+
+      iex> list_update_tokens()
+      [%UpdateToken{}, ...]
+
+  """
+  def list_update_tokens do
+    Repo.all(UpdateToken)
+  end
+
+  @doc """
+  Gets a single update_token.
+
+  Raises `Ecto.NoResultsError` if the Update token does not exist.
+
+  ## Examples
+
+      iex> get_update_token!(123)
+      %UpdateToken{}
+
+      iex> get_update_token!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_update_token!(id), do: Repo.get!(UpdateToken, id)
+
+  @doc """
+  Creates a update_token.
+  ## Examples
+
+      iex> create_update_token(%{field: value})
+      {:ok, %UpdateToken{}}
+
+      iex> create_update_token(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_update_token(attrs \\ %{}) do
+    %UpdateToken{}
+    |> UpdateToken.insert_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Deletes a update_token.
+
+  ## Examples
+
+      iex> delete_update_token(update_token)
+      {:ok, %UpdateToken{}}
+
+      iex> delete_update_token(update_token)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_update_token(%UpdateToken{} = update_token) do
+    Repo.delete(update_token)
   end
 end
