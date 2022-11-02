@@ -10,7 +10,7 @@ defmodule RedstoneServerWeb.Tcp.Server do
     {:ok, listen_socket} =
       :gen_tcp.listen(
         port,
-        [:binary, packet: :line, reuseaddr: true]
+        [:binary, packet: 4, reuseaddr: true]
       )
 
     loop_acceptor(listen_socket)

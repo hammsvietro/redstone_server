@@ -14,7 +14,7 @@ defmodule RedstoneServerWeb.Tcp.ConnectionHandler do
 
   # TCP callbacks
   def handle_info({:tcp, socket, data}, _state) do
-    :ok = :gen_tcp.send(socket, data)
+    :ok = :gen_tcp.send(socket, "ACK\n")
     {:noreply, %{socket: socket, last_msg: data}}
   end
 
