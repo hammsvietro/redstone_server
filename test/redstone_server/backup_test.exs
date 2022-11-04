@@ -4,7 +4,7 @@ defmodule RedstoneServer.BackupTest do
   alias RedstoneServer.Backup
 
   describe "update_tokens" do
-    alias RedstoneServer.Backup.UpdateToken
+    alias RedstoneServer.Backup.UploadToken
 
     import RedstoneServer.BackupFixtures
 
@@ -23,7 +23,7 @@ defmodule RedstoneServer.BackupTest do
     test "create_update_token/1 with valid data creates a update_token" do
       valid_attrs = %{token: "some token"}
 
-      assert {:ok, %UpdateToken{} = update_token} = Backup.create_update_token(valid_attrs)
+      assert {:ok, %UploadToken{} = update_token} = Backup.create_update_token(valid_attrs)
       assert update_token.token == "some token"
     end
 
@@ -35,19 +35,24 @@ defmodule RedstoneServer.BackupTest do
       update_token = update_token_fixture()
       update_attrs = %{token: "some updated token"}
 
-      assert {:ok, %UpdateToken{} = update_token} = Backup.update_update_token(update_token, update_attrs)
+      assert {:ok, %UploadToken{} = update_token} =
+               Backup.update_update_token(update_token, update_attrs)
+
       assert update_token.token == "some updated token"
     end
 
     test "update_update_token/2 with invalid data returns error changeset" do
       update_token = update_token_fixture()
-      assert {:error, %Ecto.Changeset{}} = Backup.update_update_token(update_token, @invalid_attrs)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Backup.update_update_token(update_token, @invalid_attrs)
+
       assert update_token == Backup.get_update_token!(update_token.id)
     end
 
     test "delete_update_token/1 deletes the update_token" do
       update_token = update_token_fixture()
-      assert {:ok, %UpdateToken{}} = Backup.delete_update_token(update_token)
+      assert {:ok, %UploadToken{}} = Backup.delete_update_token(update_token)
       assert_raise Ecto.NoResultsError, fn -> Backup.get_update_token!(update_token.id) end
     end
 

@@ -6,7 +6,7 @@ defmodule RedstoneServer.Backup do
 
   alias Ecto.Multi
   alias RedstoneServer.Repo
-  alias RedstoneServer.Backup.{Backup, File, Update, UpdateToken}
+  alias RedstoneServer.Backup.{Backup, File, Update, UploadToken}
 
   def create_backup(name, user_id, files) do
     Multi.new()
@@ -31,10 +31,11 @@ defmodule RedstoneServer.Backup do
   end
 
   def get_backup(backup_id) do
-    (from b in RedstoneServer.Backup.Backup,
+    from(b in RedstoneServer.Backup.Backup,
       where: b.id == ^backup_id,
-      preload: :files)
-    |> Repo.one
+      preload: :files
+    )
+    |> Repo.one()
   end
 
   defp store_file_tree(multi, files) do
@@ -61,11 +62,11 @@ defmodule RedstoneServer.Backup do
   ## Examples
 
       iex> list_update_tokens()
-      [%UpdateToken{}, ...]
+      [%UploadToken{}, ...]
 
   """
   def list_update_tokens do
-    Repo.all(UpdateToken)
+    Repo.all(UploadToken)
   end
 
   @doc """
@@ -76,28 +77,28 @@ defmodule RedstoneServer.Backup do
   ## Examples
 
       iex> get_update_token!(123)
-      %UpdateToken{}
+      %UploadToken{}
 
       iex> get_update_token!(456)
       ** (Ecto.NoResultsError)
 
   """
-  def get_update_token!(id), do: Repo.get!(UpdateToken, id)
+  def get_update_token!(id), do: Repo.get!(UploadToken, id)
 
   @doc """
   Creates a update_token.
   ## Examples
 
       iex> create_update_token(%{field: value})
-      {:ok, %UpdateToken{}}
+      {:ok, %UploadToken{}}
 
       iex> create_update_token(%{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
   def create_update_token(attrs \\ %{}) do
-    %UpdateToken{}
-    |> UpdateToken.insert_changeset(attrs)
+    %UploadToken{}
+    |> UploadToken.insert_changeset(attrs)
     |> Repo.insert()
   end
 
@@ -107,13 +108,13 @@ defmodule RedstoneServer.Backup do
   ## Examples
 
       iex> delete_update_token(update_token)
-      {:ok, %UpdateToken{}}
+      {:ok, %UploadToken{}}
 
       iex> delete_update_token(update_token)
       {:error, %Ecto.Changeset{}}
 
   """
-  def delete_update_token(%UpdateToken{} = update_token) do
+  def delete_update_token(%UploadToken{} = update_token) do
     Repo.delete(update_token)
   end
 end

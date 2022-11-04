@@ -15,6 +15,7 @@ defmodule RedstoneServerWeb.Api.UserAuth do
         case Accounts.get_user_by_email_and_password(email, password) do
           %User{} = user ->
             token = Accounts.generate_user_session_token(user)
+
             conn
             |> UserAuth.write_login_cookies(token)
             |> send_resp(200, "")
