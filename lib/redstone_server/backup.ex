@@ -38,6 +38,20 @@ defmodule RedstoneServer.Backup do
     |> Repo.one()
   end
 
+  def get_backup_by_upload_token(token) do
+    from(u in RedstoneServer.Backup.UploadToken,
+      where: u.token == ^token,
+      preload: :backup
+    ) |> Repo.one()
+  end
+  
+
+  @spec get_file(binary()) :: RedstoneServer.Backup.File.__struct__
+  def get_file(file_id) do
+    from(f in RedstoneServer.Backup.File, where: f.id == ^file_id)
+    |> Repo.one()
+  end
+
   defp store_file_tree(multi, files) do
     Enum.reduce(files, multi, fn
       file, multi ->
