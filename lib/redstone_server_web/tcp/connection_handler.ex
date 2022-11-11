@@ -14,7 +14,7 @@ defmodule RedstoneServerWeb.Tcp.ConnectionHandler do
 
   # TCP callbacks
   def handle_info({:tcp, socket, packet}, _state) do
-    data = packet |> Jason.decode!()
+    {:ok, data} = packet |> Cyanide.decode()
     # TODO: handle invalid upload_token
 
     # backup = data["upload_token"]
@@ -22,17 +22,17 @@ defmodule RedstoneServerWeb.Tcp.ConnectionHandler do
 
     file = data["file_id"]
     |> RedstoneServer.Backup.get_file()
-    |> IO.inspect()
 
-    # TODO calculate sha_1 checksum and see if it matches
+    # TODO calculate sha_256 checksum and see if it matches
 
     path = "/home/hammsvietro/backup_test/#{file.path}"
     {_file_name, folders} = path
     |> String.split("/", trim: true)
     |> List.pop_at(-1)
 
+    file_chunk = data["data"] |> elem(1)
     :ok = File.mkdir_p("/#{Enum.join(folders, "/")}/")
-    File.write(path, data["data"], [:append, :charlist])
+    File.write(path, file_chunk, [:append, :binary])
     
     :ok = :gen_tcp.send(socket, "ACK\n")
     {:noreply, %{socket: socket, last_msg: data}}
