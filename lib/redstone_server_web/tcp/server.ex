@@ -1,4 +1,9 @@
 defmodule RedstoneServerWeb.Tcp.Server do
+  @moduledoc """
+  Genserver for handling incoming tcp connections.
+
+  The connections are passed to RedstoneServerWeb.Tcp.ConnectionHandler.
+  """
   require Logger
   use Task
 
