@@ -1,33 +1,24 @@
 defmodule RedstoneServer.Backup do
   @moduledoc """
-  Data access layer for the backup context
+  Service layer for the backup context
   """
   import Ecto.Query
 
   alias Ecto.Multi
   alias RedstoneServer.Repo
+  alias RedstoneServer.Filesystem
   alias RedstoneServer.Backup.{Backup, File, Update, UploadToken}
 
   def create_backup(name, user_id, files) do
-    Multi.new()
-    |> Multi.insert(
-      :backup,
-      RedstoneServer.Backup.Backup.changeset(%Backup{}, %{
-        "name" => name,
-        "created_by_id" => user_id,
-        "entrypoint" => "CHANGEME"
-      })
-    )
-    |> Multi.insert(:update, fn %{backup: backup} ->
-      RedstoneServer.Backup.Update.insert_changeset(%Update{}, %{
-        "backup_id" => backup.id,
-        "made_by_id" => user_id,
-        "message" => "Bootstrap",
-        "hash" => RedstoneServer.Crypto.generate_hash()
-      })
-    end)
-    |> store_file_tree(files)
-    |> Repo.transaction()
+    entrypoint = Filesystem.get_backup_entrypoint(name)
+    transaction = Multi.new()
+      |> _create_backup_multi(name, user_id, entrypoint, files)
+      |> store_file_tree(files)
+      |> Repo.transaction()
+    case transaction do
+      {:ok, schemas} -> {:ok, schemas}
+      {:error, _, changeset, _} -> {:error, changeset}
+    end
   end
 
   def get_backup(backup_id) do
@@ -131,5 +122,25 @@ defmodule RedstoneServer.Backup do
   """
   def delete_update_token(%UploadToken{} = update_token) do
     Repo.delete(update_token)
+  end
+
+  defp _create_backup_multi(multi, name, user_id, path, files) do
+    multi
+      |> Multi.insert(
+        :backup,
+        RedstoneServer.Backup.Backup.changeset(%Backup{}, %{
+          "name" => name,
+          "created_by_id" => user_id,
+          "entrypoint" => path
+        })
+      )
+      |> Multi.insert(:update, fn %{backup: backup} ->
+        RedstoneServer.Backup.Update.insert_changeset(%Update{}, %{
+          "backup_id" => backup.id,
+          "made_by_id" => user_id,
+          "message" => "Bootstrap",
+          "hash" => RedstoneServer.Crypto.generate_hash()
+        })
+      end)
   end
 end

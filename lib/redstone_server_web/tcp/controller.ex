@@ -7,11 +7,11 @@ defmodule RedstoneServerWeb.Tcp.Controller do
   alias RedstoneServer.Backup.File, as: RSFile
 
   def process(%{"operation" => "UploadChunk"} = payload) do
-    with %Backup{} = _backup <-
+    with %Backup{} = backup <-
            RedstoneServer.Backup.get_backup_by_upload_token(payload["upload_token"]),
          %RSFile{} = file <- RedstoneServer.Backup.get_file(payload["file_id"]) do
       # TODO calculate sha_256 checksum and see if it matches
-      path = Path.join(System.user_home!(), "backup_test/#{file.path}")
+      path = Path.join(backup.entrypoint, file.path)
 
       {_file_name, folders} =
         path
@@ -26,6 +26,6 @@ defmodule RedstoneServerWeb.Tcp.Controller do
     end
   end
 
-  def process("Abort", payload) do
+  def process(%{"operation" => "Abort"} = payload) do
   end
 end

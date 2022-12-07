@@ -32,3 +32,8 @@ redstone_server-*.tar
 npm-debug.log
 /assets/node_modules/
 
+priv/backups/*
+!priv/backups/.keep
+
+priv/temporary_backups/*
+!priv/temporary_backups/.keep
