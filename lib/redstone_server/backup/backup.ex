@@ -32,5 +32,6 @@ defmodule RedstoneServer.Backup.Backup do
     |> cast(attrs, [:name, :created_by_id, :entrypoint])
     |> foreign_key_constraint(:created_by_id)
     |> validate_required([:name, :entrypoint])
+    |> unique_constraint(:name)
   end
 end

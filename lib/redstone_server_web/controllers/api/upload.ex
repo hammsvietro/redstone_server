@@ -4,27 +4,25 @@ defmodule RedstoneServerWeb.Api.Upload do
   alias RedstoneServerWeb.Api.Schemas.Upload, as: UploadValidators
 
   def declare(conn, params) do
-    case UploadValidators.validate_backup(params) do
-      %{
-        valid?: true,
-        changes: %{name: name, files: files}
-      } ->
-        user_id = conn.assigns.current_user.id
-        {:ok, %{backup: backup}} = RedstoneServer.Backup.create_backup(name, user_id, files)
-        backup = RedstoneServer.Backup.get_backup(backup.id)
+    user_id = conn.assigns.current_user.id
 
-        {:ok, %UploadToken{token: token}} =
-          RedstoneServer.Backup.create_update_token(%{backup_id: backup.id, user_id: user_id})
+    with %{
+           valid?: true,
+           changes: %{name: name, files: files}
+         } <- UploadValidators.validate_backup(params),
+         {:ok, %{backup: backup}} <- RedstoneServer.Backup.create_backup(name, user_id, files) do
+      backup = RedstoneServer.Backup.get_backup(backup.id)
 
-        conn
-        |> put_view(RedstoneServerWeb.Json.UploadView)
-        |> render("show.json", %{backup: backup, update_token: token})
+      # TODO: also create update token durring the backup
+      {:ok, %UploadToken{token: token}} =
+        RedstoneServer.Backup.create_update_token(%{backup_id: backup.id, user_id: user_id})
 
-      changeset ->
-        conn
-        |> put_status(400)
-        |> put_view(RedstoneServerWeb.ErrorView)
-        |> render("error.json", changeset: changeset)
+      conn
+      |> put_view(RedstoneServerWeb.Json.UploadView)
+      |> render("show.json", %{backup: backup, update_token: token})
+    else
+      %{valid?: false} = changeset -> _render_changeset_error(conn, changeset)
+      {:error, changeset} -> _render_changeset_error(conn, changeset)
     end
   end
 
@@ -32,5 +30,12 @@ defmodule RedstoneServerWeb.Api.Upload do
     files
     |> Enum.map(fn file -> file["size"] end)
     |> Enum.sum()
+  end
+
+  defp _render_changeset_error(conn, changeset) do
+    conn
+    |> put_status(400)
+    |> put_view(RedstoneServerWeb.ErrorView)
+    |> render("error.json", changeset: changeset)
   end
 end

@@ -7,14 +7,17 @@ defmodule RedstoneServer.Backup do
   alias Ecto.Multi
   alias RedstoneServer.Repo
   alias RedstoneServer.Filesystem
-  alias RedstoneServer.Backup.{Backup, File, Update, UploadToken}
+  alias RedstoneServer.Backup.{Backup, File, Update, UploadToken, FileUpdate}
 
   def create_backup(name, user_id, files) do
     entrypoint = Filesystem.get_backup_entrypoint(name)
-    transaction = Multi.new()
-      |> _create_backup_multi(name, user_id, entrypoint, files)
-      |> store_file_tree(files)
+
+    transaction =
+      Multi.new()
+      |> _create_backup_multi(name, user_id, entrypoint)
+      |> _store_file_tree(files)
       |> Repo.transaction()
+
     case transaction do
       {:ok, schemas} -> {:ok, schemas}
       {:error, _, changeset, _} -> {:error, changeset}
@@ -42,24 +45,6 @@ defmodule RedstoneServer.Backup do
   def get_file(file_id) do
     from(f in RedstoneServer.Backup.File, where: f.id == ^file_id)
     |> Repo.one()
-  end
-
-  defp store_file_tree(multi, files) do
-    Enum.reduce(files, multi, fn
-      file, multi ->
-        multi
-        |> Multi.insert(file["path"], fn
-          %{backup: backup} ->
-            File.insert_changeset(
-              %File{},
-              %{
-                "path" => file["path"],
-                "sha1_checksum" => file["sha_256_digest"],
-                "backup_id" => backup.id
-              }
-            )
-        end)
-    end)
   end
 
   @doc """
@@ -124,23 +109,58 @@ defmodule RedstoneServer.Backup do
     Repo.delete(update_token)
   end
 
-  defp _create_backup_multi(multi, name, user_id, path, files) do
+  defp _create_backup_multi(multi, name, user_id, path) do
     multi
-      |> Multi.insert(
-        :backup,
-        RedstoneServer.Backup.Backup.changeset(%Backup{}, %{
-          "name" => name,
-          "created_by_id" => user_id,
-          "entrypoint" => path
-        })
-      )
-      |> Multi.insert(:update, fn %{backup: backup} ->
-        RedstoneServer.Backup.Update.insert_changeset(%Update{}, %{
-          "backup_id" => backup.id,
-          "made_by_id" => user_id,
-          "message" => "Bootstrap",
-          "hash" => RedstoneServer.Crypto.generate_hash()
-        })
-      end)
+    |> Multi.insert(
+      :backup,
+      RedstoneServer.Backup.Backup.changeset(%Backup{}, %{
+        "name" => name,
+        "created_by_id" => user_id,
+        "entrypoint" => path
+      })
+    )
+    |> Multi.insert(:update, fn %{backup: backup} ->
+      RedstoneServer.Backup.Update.insert_changeset(%Update{}, %{
+        "backup_id" => backup.id,
+        "made_by_id" => user_id,
+        "message" => "Bootstrap",
+        "hash" => RedstoneServer.Crypto.generate_hash()
+      })
+    end)
+  end
+
+  defp _store_file_tree(multi, files) do
+    Enum.reduce(files, multi, fn
+      file, multi ->
+        file_path = file["path"]
+
+        multi
+        |> Multi.insert(file_path, fn
+          %{backup: backup} ->
+            File.insert_changeset(
+              %File{},
+              %{
+                "path" => file_path,
+                "sha1_checksum" => file["sha_256_digest"],
+                "backup_id" => backup.id
+              }
+            )
+        end)
+        |> Multi.insert(
+          file_path <> "-update",
+          fn %{^file_path => file, update: update} ->
+            IO.inspect(file)
+
+            FileUpdate.changeset(
+              %FileUpdate{},
+              %{
+                "file_id" => file.id,
+                "update_id" => update.id,
+                "operation" => :add
+              }
+            )
+          end
+        )
+    end)
   end
 end

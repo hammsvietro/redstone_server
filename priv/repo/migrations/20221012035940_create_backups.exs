@@ -12,5 +12,6 @@ defmodule RedstoneServer.Repo.Migrations.CreateBackups do
     end
 
     create index(:backups, [:created_by_id])
+    create unique_index(:backups, [:name])
   end
 end
