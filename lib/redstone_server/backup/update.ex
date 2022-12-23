@@ -7,7 +7,8 @@ defmodule RedstoneServer.Backup.Update do
   schema "updates" do
     field :hash, :string
     field :message, :string
-    field :transaction_completed, :boolean
+    field :transaction_status, Ecto.Enum, values: [:in_progress, :completed, :aborted, :failed]
+    field :error_message, :string
     belongs_to :made_by, RedstoneServer.Accounts.User
     belongs_to :backup, RedstoneServer.Backup.Backup
 
@@ -20,7 +21,7 @@ defmodule RedstoneServer.Backup.Update do
     |> cast(attrs, [:message, :hash, :made_by_id, :backup_id])
     |> foreign_key_constraint(:made_by_id)
     |> foreign_key_constraint(:backup_id)
-    |> put_change(:transaction_completed, false)
+    |> put_change(:transaction_status, :in_progress)
     |> validate_required([:message, :hash])
   end
 end
