@@ -10,12 +10,17 @@ defmodule RedstoneServerWeb.Api.Upload do
            valid?: true,
            changes: %{name: name, files: files}
          } <- UploadValidators.validate_backup(params),
-         {:ok, %{backup: backup}} <- RedstoneServer.Backup.create_backup(name, user_id, files) do
+         {:ok, %{backup: backup, update: update}} <-
+           RedstoneServer.Backup.create_backup(name, user_id, files) do
       backup = RedstoneServer.Backup.get_backup(backup.id)
 
       # TODO: also create update token durring the backup
       {:ok, %UploadToken{token: token}} =
-        RedstoneServer.Backup.create_update_token(%{backup_id: backup.id, user_id: user_id})
+        RedstoneServer.Backup.create_update_token(%{
+          backup_id: backup.id,
+          user_id: user_id,
+          update: update.id
+        })
 
       conn
       |> put_view(RedstoneServerWeb.Json.UploadView)

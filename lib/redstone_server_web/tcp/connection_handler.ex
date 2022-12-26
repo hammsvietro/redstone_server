@@ -20,6 +20,7 @@ defmodule RedstoneServerWeb.Tcp.ConnectionHandler do
     {:ok, data} = packet |> Cyanide.decode()
     RedstoneServerWeb.Tcp.Controller.process(data)
     :ok = :gen_tcp.send(socket, "ACK\n")
+    # :ok = :gen_tcp.send(socket, Cyanide.encode!("ACK\n"))
     {:noreply, %{socket: socket, last_msg: data}}
   end
 

@@ -2,6 +2,8 @@ defmodule RedstoneServer.Backup.File do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias RedstoneServer.Filesystem
+
   defimpl Jason.Encoder, for: RedstoneServer.Backup.File do
     def encode(struct, opts) do
       Enum.reduce(Map.from_struct(struct), %{}, fn
@@ -28,7 +30,23 @@ defmodule RedstoneServer.Backup.File do
   def insert_changeset(file, attrs) do
     file
     |> cast(attrs, [:path, :sha1_checksum, :backup_id])
-    |> foreign_key_constraint(:folder_id)
     |> validate_required([:path, :sha1_checksum])
   end
+
+  def update_path_changeset(file, path) do
+    file
+    |> change(path: path)
+    |> validate_required([:path, :sha1_checksum])
+  end
+
+  def with_temporary_backup_path(%__MODULE__{} = file),
+    do: %__MODULE__{
+      file
+      | path:
+          String.replace(
+            file.path,
+            Filesystem.get_base_backups_path(),
+            Filesystem.get_base_temporary_backups_path()
+          )
+    }
 end

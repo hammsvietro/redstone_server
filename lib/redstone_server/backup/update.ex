@@ -24,4 +24,8 @@ defmodule RedstoneServer.Backup.Update do
     |> put_change(:transaction_status, :in_progress)
     |> validate_required([:message, :hash])
   end
+
+  def update_status_changeset(%__schema__{} = update, status) do
+    change(update, transaction_status: status)
+  end
 end

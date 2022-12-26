@@ -10,7 +10,7 @@ defmodule RedstoneServer.Backup do
   alias RedstoneServer.Backup.{Backup, File, Update, UploadToken, FileUpdate}
 
   def create_backup(name, user_id, files) do
-    entrypoint = Filesystem.get_backup_entrypoint(name)
+    entrypoint = Filesystem.get_temporary_backup_entrypoint(name)
 
     transaction =
       Multi.new()
@@ -41,10 +41,34 @@ defmodule RedstoneServer.Backup do
     |> Repo.one()
   end
 
+  def get_update_by_upload_token(token) do
+    from(ut in RedstoneServer.Backup.UploadToken,
+      where: ut.token == ^token,
+      left_join: up in assoc(ut, :update),
+      select: up
+    )
+    |> Repo.one()
+  end
+
   @spec get_file(binary()) :: RedstoneServer.Backup.File.__struct__()
   def get_file(file_id) do
     from(f in RedstoneServer.Backup.File, where: f.id == ^file_id)
     |> Repo.one()
+  end
+
+  def get_files_by_backup(backup_id) do
+    from(f in RedstoneServer.Backup.File, where: f.backup_id == ^backup_id)
+    |> Repo.all()
+  end
+
+  def update_paths_and_commit(file_changesets, update) do
+    file_changesets
+    |> Enum.reduce(Ecto.Multi.new(), &Ecto.Multi.update(&2, &1.path, &1))
+    |> Ecto.Multi.update(
+      :update,
+      RedstoneServer.Backup.Update.update_status_changeset(update, :completed)
+    )
+    |> Repo.transaction()
   end
 
   @doc """
@@ -149,8 +173,6 @@ defmodule RedstoneServer.Backup do
         |> Multi.insert(
           file_path <> "-update",
           fn %{^file_path => file, update: update} ->
-            IO.inspect(file)
-
             FileUpdate.changeset(
               %FileUpdate{},
               %{

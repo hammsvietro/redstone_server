@@ -7,6 +7,7 @@ defmodule RedstoneServer.Repo.Migrations.CreateUploadTokens do
       add :token, :string
       add :user_id, references(:users, on_delete: :nothing, type: :binary_id)
       add :backup_id, references(:backups, on_delete: :nothing, type: :binary_id)
+      add :update_id, references(:updates, on_delete: :nothing, type: :binary_id)
 
       timestamps()
     end
