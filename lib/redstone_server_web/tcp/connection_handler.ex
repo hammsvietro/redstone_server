@@ -17,7 +17,7 @@ defmodule RedstoneServerWeb.Tcp.ConnectionHandler do
 
   # TCP callbacks
   def handle_info({:tcp, socket, packet}, _state) do
-    {:ok, data} = packet |> Cyanide.decode()
+    {:ok, data} = Cyanide.decode(packet)
     RedstoneServerWeb.Tcp.Controller.process(data)
     :ok = :gen_tcp.send(socket, "ACK\n")
     # :ok = :gen_tcp.send(socket, Cyanide.encode!("ACK\n"))

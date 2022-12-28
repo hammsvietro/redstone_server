@@ -19,7 +19,7 @@ defmodule RedstoneServerWeb.Api.Upload do
         RedstoneServer.Backup.create_update_token(%{
           backup_id: backup.id,
           user_id: user_id,
-          update: update.id
+          update_id: update.id
         })
 
       conn

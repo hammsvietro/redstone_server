@@ -13,13 +13,30 @@ defmodule RedstoneServer.Filesystem do
   def get_temporary_backup_entrypoint(backup_name),
     do: Path.join(@base_temporary_backups_path, backup_name)
 
-  def move_files_to_definitive_folder(files) do
-    Enum.map(files, fn file ->
-      definitive_path =
-        file.path |> String.replace(@base_temporary_backups_path, @base_backups_path)
+  def create_folders_if_needed(file_name) do
+      {_file_name, folders} =
+        file_name 
+         |> String.split("/", trim: true)
+         |> List.pop_at(-1)
 
-      File.rename(file.path, definitive_path)
-      RedstoneServer.Backup.File.update_path_changeset(file, definitive_path)
+      File.mkdir_p("/#{Enum.join(folders, "/")}/")
+  end
+
+  def write_data(path, data), do: File.write(path, data, [:append, :binary])
+
+  def move_files_to_definitive_folder(backup_name, files) do
+    Enum.each(files, fn file ->
+      temporary_path = 
+        backup_name
+        |> get_temporary_backup_entrypoint()
+        |> Path.join(file.path)
+      definitive_path = 
+        backup_name
+        |> get_backup_entrypoint()
+        |> Path.join(file.path)
+
+      create_folders_if_needed(definitive_path)
+      :ok = File.rename(temporary_path, definitive_path)
     end)
   end
 end

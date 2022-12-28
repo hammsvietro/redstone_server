@@ -61,14 +61,10 @@ defmodule RedstoneServer.Backup do
     |> Repo.all()
   end
 
-  def update_paths_and_commit(file_changesets, update) do
-    file_changesets
-    |> Enum.reduce(Ecto.Multi.new(), &Ecto.Multi.update(&2, &1.path, &1))
-    |> Ecto.Multi.update(
-      :update,
-      RedstoneServer.Backup.Update.update_status_changeset(update, :completed)
-    )
-    |> Repo.transaction()
+  def update_update_status(%Update{} = update, status) do
+    update
+    |> RedstoneServer.Backup.Update.update_status_changeset(status)
+    |> Repo.update()
   end
 
   @doc """
