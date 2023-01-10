@@ -20,7 +20,7 @@ defmodule RedstoneServer.Backup.File do
   @foreign_key_type :binary_id
   schema "files" do
     field :path, :string
-    field :sha1_checksum, :string
+    field :sha256_checksum, :string
     belongs_to :backup, RedstoneServer.Backup.Backup, type: :binary_id
 
     timestamps()
@@ -29,14 +29,14 @@ defmodule RedstoneServer.Backup.File do
   @doc false
   def insert_changeset(file, attrs) do
     file
-    |> cast(attrs, [:path, :sha1_checksum, :backup_id])
-    |> validate_required([:path, :sha1_checksum])
+    |> cast(attrs, [:path, :sha256_checksum, :backup_id])
+    |> validate_required([:path, :sha256_checksum])
   end
 
   def update_path_changeset(file, path) do
     file
     |> change(path: path)
-    |> validate_required([:path, :sha1_checksum])
+    |> validate_required([:path, :sha256_checksum])
   end
 
   def with_temporary_backup_path(%__MODULE__{} = file),

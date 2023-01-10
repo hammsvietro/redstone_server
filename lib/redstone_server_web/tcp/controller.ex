@@ -6,16 +6,17 @@ defmodule RedstoneServerWeb.Tcp.Controller do
   alias RedstoneServer.Backup.Update
   alias RedstoneServer.Backup.Backup
   alias RedstoneServer.Filesystem
+  alias RedstoneServerWeb.Tcp.Schemas
   alias RedstoneServer.Backup.File, as: RSFile
 
   def process(%{"operation" => "upload_chunk"} = payload) do
+    IO.inspect("####")
+    IO.inspect(Schemas.validate_upload_chunk(payload))
+    IO.inspect("####")
     with %Backup{} = backup <-
            RedstoneServer.Backup.get_backup_by_upload_token(payload["upload_token"]),
-         %RSFile{} = file <- RedstoneServer.Backup.get_file(payload["file_id"]) do
-      temporary_path =
-        backup.name
-        |> Filesystem.get_temporary_backup_entrypoint()
-        |> Path.join(file.path)
+         %RSFile{} = file <- RedstoneServer.Backup.get_file(payload["file_id"], backup.id) do
+      temporary_path = Filesystem.get_temporary_file_path(backup.name, file.path)
 
       file_chunk = payload["data"] |> elem(1)
 
@@ -29,20 +30,26 @@ defmodule RedstoneServerWeb.Tcp.Controller do
   end
 
   def process(%{"operation" => "commit"} = payload) do
-    # TODO: move files to definitive folder and change update status to completed
     with %Backup{} = backup <-
-           RedstoneServer.Backup.get_backup_by_upload_token(payload["upload_token"]),
+      RedstoneServer.Backup.get_backup_by_upload_token(payload["upload_token"]),
          %Update{} = update <-
-           RedstoneServer.Backup.get_update_by_upload_token(payload["upload_token"]),
-         files <- RedstoneServer.Backup.get_files_by_backup(backup.id) do
+      RedstoneServer.Backup.get_update_by_upload_token(payload["upload_token"]),
+         files <- RedstoneServer.Backup.get_files_changed_in_update(backup.id, operations: [:add, :update]) do
+      {:ok, _} = RedstoneServer.Backup.update_update_status(update, :completed)
       Filesystem.move_files_to_definitive_folder(backup.name, files)
-      RedstoneServer.Backup.update_update_status(update, :completed)
       wrap_response(:ok)
     end
   end
 
   def process(%{"operation" => "check_file"} = payload) do
-    wrap_response(:ok)
+    with %Backup{} = backup <-
+      RedstoneServer.Backup.get_backup_by_upload_token(payload["upload_token"]),
+      %RedstoneServer.Backup.File{} = file <- RedstoneServer.Backup.get_file(payload["file_id"], backup.id),
+      true <- RedstoneServer.Filesystem.verify_checksum(file.sha256_checksum, Filesystem.get_temporary_file_path(backup.name, file.path)) do
+      wrap_response(:ok)
+    else
+      error -> wrap_response(error)
+    end
   end
 
   def process(%{"operation" => "abort"} = payload) do

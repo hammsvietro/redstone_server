@@ -50,9 +50,9 @@ defmodule RedstoneServer.Backup do
     |> Repo.one()
   end
 
-  @spec get_file(binary()) :: RedstoneServer.Backup.File.__struct__()
-  def get_file(file_id) do
-    from(f in RedstoneServer.Backup.File, where: f.id == ^file_id)
+  @spec get_file(binary(), binary()) :: RedstoneServer.Backup.File.__struct__()
+  def get_file(file_id, backup_id) do
+    from(f in RedstoneServer.Backup.File, where: f.id == ^file_id and f.backup_id == ^backup_id)
     |> Repo.one()
   end
 
@@ -60,6 +60,23 @@ defmodule RedstoneServer.Backup do
     from(f in RedstoneServer.Backup.File, where: f.backup_id == ^backup_id)
     |> Repo.all()
   end
+
+  def get_files_changed_in_update(update_id, opts \\ []) do
+    query = RedstoneServer.Backup.FileUpdate
+    |> where([fu], fu.update_id == ^update_id)
+    |> join(:left, [fu], f in assoc(fu, :file))
+    |> select([_, f], f)
+
+    Enum.reduce(opts, query, fn 
+      {:operations, operations}, query -> where(query, [fu], fu.operation in ^operations)
+      _, query -> query
+    end)
+    |> Repo.all()
+  end
+
+  # def get_files_changed_in_update(update_id, opts) do
+  #   Enum.reduce 
+  # end
 
   def update_update_status(%Update{} = update, status) do
     update
@@ -161,7 +178,7 @@ defmodule RedstoneServer.Backup do
               %File{},
               %{
                 "path" => file_path,
-                "sha1_checksum" => file["sha_256_digest"],
+                "sha256_checksum" => file["sha_256_digest"],
                 "backup_id" => backup.id
               }
             )

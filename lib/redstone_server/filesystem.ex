@@ -14,6 +14,18 @@ defmodule RedstoneServer.Filesystem do
   def get_temporary_backup_entrypoint(backup_name),
     do: Path.join(@base_temporary_backups_path, backup_name)
 
+  def get_temporary_file_path(backup_name, relative_file_path) do
+    backup_name
+    |> get_temporary_backup_entrypoint()
+    |> Path.join(relative_file_path)
+  end
+
+  def get_file_path(backup_name, relative_file_path) do
+    backup_name
+    |> get_backup_entrypoint()
+    |> Path.join(relative_file_path)
+  end
+
   def create_folders_if_needed(file_name) do
     {_file_name, folders} =
       file_name
@@ -42,7 +54,9 @@ defmodule RedstoneServer.Filesystem do
     end)
   end
 
-  def verify_file_checksum(file_path) do
+  def verify_checksum(checksum, file_path), do: checksum == _calculate_sha256(file_path)
+
+  defp _calculate_sha256(file_path) do
     File.stream!(file_path, [], 2048)
     |> Enum.reduce(:crypto.hash_init(:sha256), &:crypto.hash_update(&2, &1))
     |> :crypto.hash_final()

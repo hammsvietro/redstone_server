@@ -22,7 +22,6 @@ defmodule RedstoneServerWeb.Tcp.ConnectionHandler do
     result =
       data
       |> RedstoneServerWeb.Tcp.Controller.process()
-      |> IO.inspect()
       |> Cyanide.encode!()
 
     :ok = :gen_tcp.send(socket, result)
