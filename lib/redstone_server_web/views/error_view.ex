@@ -15,7 +15,10 @@ defmodule RedstoneServerWeb.ErrorView do
   end
 
   def render("error.json", %{changeset: changeset}) do
-    %{errors: translate_errors(changeset)}
+    %{
+      errors: translate_errors(changeset),
+      stringified_errors: RedstoneServerWeb.ErrorHelpers.changeset_error_to_string(changeset)
+    }
   end
 
   defp translate_errors(changeset) do

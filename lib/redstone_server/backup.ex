@@ -62,12 +62,13 @@ defmodule RedstoneServer.Backup do
   end
 
   def get_files_changed_in_update(update_id, opts \\ []) do
-    query = RedstoneServer.Backup.FileUpdate
-    |> where([fu], fu.update_id == ^update_id)
-    |> join(:left, [fu], f in assoc(fu, :file))
-    |> select([_, f], f)
+    query =
+      RedstoneServer.Backup.FileUpdate
+      |> where([fu], fu.update_id == ^update_id)
+      |> join(:left, [fu], f in assoc(fu, :file))
+      |> select([_, f], f)
 
-    Enum.reduce(opts, query, fn 
+    Enum.reduce(opts, query, fn
       {:operations, operations}, query -> where(query, [fu], fu.operation in ^operations)
       _, query -> query
     end)

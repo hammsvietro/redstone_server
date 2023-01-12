@@ -1,6 +1,6 @@
 defmodule RedstoneServer.Crypto do
   @moduledoc """
-  Crypto functions for general
+  Crypto functions.
   """
 
   def generate_hash() do

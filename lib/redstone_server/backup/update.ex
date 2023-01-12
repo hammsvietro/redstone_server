@@ -1,6 +1,5 @@
 defmodule RedstoneServer.Backup.Update do
-  use Ecto.Schema
-  import Ecto.Changeset
+  use RedstoneServer.Schema
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id

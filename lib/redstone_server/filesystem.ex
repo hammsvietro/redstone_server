@@ -49,7 +49,7 @@ defmodule RedstoneServer.Filesystem do
         |> get_backup_entrypoint()
         |> Path.join(file.path)
 
-      create_folders_if_needed(definitive_path)
+      :ok = create_folders_if_needed(definitive_path)
       :ok = File.rename(temporary_path, definitive_path)
     end)
   end

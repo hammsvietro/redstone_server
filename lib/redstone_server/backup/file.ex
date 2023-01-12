@@ -1,20 +1,7 @@
 defmodule RedstoneServer.Backup.File do
-  use Ecto.Schema
-  import Ecto.Changeset
+  use RedstoneServer.Schema
 
   alias RedstoneServer.Filesystem
-
-  defimpl Jason.Encoder, for: RedstoneServer.Backup.File do
-    def encode(struct, opts) do
-      Enum.reduce(Map.from_struct(struct), %{}, fn
-        {_k, %Ecto.Association.NotLoaded{}}, acc -> acc
-        {:__meta__, _}, acc -> acc
-        {:__struct__, _}, acc -> acc
-        {k, v}, acc -> Map.put(acc, k, v)
-      end)
-      |> Jason.Encode.map(opts)
-    end
-  end
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id

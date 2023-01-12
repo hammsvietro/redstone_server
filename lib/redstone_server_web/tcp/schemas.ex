@@ -2,7 +2,7 @@ defmodule RedstoneServerWeb.Tcp.Schemas do
   @moduledoc """
   Schemas for validating tcp messages
   """
-  
+
   use Ecto.Schema
   import Ecto.Changeset
 
