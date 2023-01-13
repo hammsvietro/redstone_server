@@ -45,6 +45,7 @@ defmodule RedstoneServerWeb.Tcp.Controller do
            ) do
       {:ok, _} = RedstoneServer.Backup.update_update_status(update, :completed)
       Filesystem.move_files_to_definitive_folder(backup.name, files)
+      RedstoneServer.Backup.delete_upload_token(payload["upload_token"])
       :ok
     else
       %{valid?: false} = changeset ->

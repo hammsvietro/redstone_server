@@ -12,8 +12,8 @@ defmodule RedstoneServer.Backup.UploadToken do
     timestamps()
   end
 
-  def insert_changeset(%__MODULE__{} = update_token, attrs) do
-    update_token
+  def insert_changeset(%__MODULE__{} = upload_token, attrs) do
+    upload_token
     |> cast(attrs, [:user_id, :backup_id, :update_id])
     |> put_change(:token, RedstoneServer.Crypto.generate_hash())
     |> unsafe_validate_unique(:token, RedstoneServer.Repo)

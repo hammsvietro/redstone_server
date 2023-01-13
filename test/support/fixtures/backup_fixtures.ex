@@ -5,16 +5,23 @@ defmodule RedstoneServer.BackupFixtures do
   """
 
   @doc """
-  Generate a update_token.
+  Generate a upload_token.
   """
-  def update_token_fixture(attrs \\ %{}) do
-    {:ok, update_token} =
-      attrs
-      |> Enum.into(%{
-        token: "some token"
-      })
-      |> RedstoneServer.Backup.create_update_token()
+  def upload_token_fixture(attrs \\ %{backup_name: "test"}) do
+    {:ok, user} =
+      RedstoneServer.Accounts.register_user(%{email: "admin@admin.com", password: "123123123123"})
 
-    update_token
+    {:ok, %{backup: %{id: backup_id}, update: %{id: update_id}}} =
+      RedstoneServer.Backup.create_backup(attrs.backup_name, user.id, [])
+
+    attrs = %{
+      backup_id: backup_id,
+      update_id: update_id,
+      user_id: user.id
+    }
+
+    {:ok, upload_token} = attrs |> RedstoneServer.Backup.create_upload_token()
+
+    upload_token
   end
 end

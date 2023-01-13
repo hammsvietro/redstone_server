@@ -154,8 +154,7 @@ defmodule RedstoneServerWeb.UserAuth do
       conn
     else
       conn
-      |> put_status(404)
-      |> json(%{error: "Not allowed"})
+      |> send_resp(401, "")
       |> halt()
     end
   end
