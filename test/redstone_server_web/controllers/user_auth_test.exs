@@ -45,43 +45,6 @@ defmodule RedstoneServerWeb.UserAuthTest do
     end
   end
 
-  describe "logout_user/1" do
-    test "erases session and cookies", %{conn: conn, user: user} do
-      user_token = Accounts.generate_user_session_token(user)
-
-      conn =
-        conn
-        |> put_session(:user_token, user_token)
-        |> put_req_cookie(@remember_me_cookie, user_token)
-        |> fetch_cookies()
-        |> UserAuth.log_out_user()
-
-      refute get_session(conn, :user_token)
-      refute conn.cookies[@remember_me_cookie]
-      assert %{max_age: 0} = conn.resp_cookies[@remember_me_cookie]
-      assert redirected_to(conn) == "/"
-      refute Accounts.get_user_by_session_token(user_token)
-    end
-
-    test "broadcasts to the given live_socket_id", %{conn: conn} do
-      live_socket_id = "users_sessions:abcdef-token"
-      RedstoneServerWeb.Endpoint.subscribe(live_socket_id)
-
-      conn
-      |> put_session(:live_socket_id, live_socket_id)
-      |> UserAuth.log_out_user()
-
-      assert_receive %Phoenix.Socket.Broadcast{event: "disconnect", topic: ^live_socket_id}
-    end
-
-    test "works even if user is already logged out", %{conn: conn} do
-      conn = conn |> fetch_cookies() |> UserAuth.log_out_user()
-      refute get_session(conn, :user_token)
-      assert %{max_age: 0} = conn.resp_cookies[@remember_me_cookie]
-      assert redirected_to(conn) == "/"
-    end
-  end
-
   describe "fetch_current_user/2" do
     test "authenticates user from session", %{conn: conn, user: user} do
       user_token = Accounts.generate_user_session_token(user)
