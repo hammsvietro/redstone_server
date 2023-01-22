@@ -30,6 +30,7 @@ defmodule RedstoneServerWeb.Tcp.ConnectionHandler do
   end
 
   def handle_info({:tcp_closed, _}, state) do
+    # TODO: save {upload/download}_token in gen_server state, and manage backup lock and update states here
     {:stop, :normal, state}
   end
 

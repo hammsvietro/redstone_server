@@ -43,7 +43,7 @@ defmodule RedstoneServerWeb.Router do
     end
 
     scope "/download" do
-      post "/Clone", Download, :clone
+      post "/clone", Download, :clone
     end
   end
 

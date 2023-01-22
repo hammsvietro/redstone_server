@@ -14,7 +14,6 @@ defmodule RedstoneServerWeb.Api.Upload do
            RedstoneServer.Backup.create_backup(name, user_id, files) do
       backup = RedstoneServer.Backup.get_backup(backup_id)
 
-      # TODO: also create update token durring the backup
       {:ok, %UploadToken{token: token}} =
         RedstoneServer.Backup.create_upload_token(%{
           backup_id: backup.id,
