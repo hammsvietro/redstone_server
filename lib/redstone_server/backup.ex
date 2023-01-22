@@ -28,8 +28,23 @@ defmodule RedstoneServer.Backup do
     from(b in RedstoneServer.Backup.Backup,
       where: b.id == ^backup_id,
       preload: :files
-    )
-    |> Repo.one()
+    ) |> Repo.one()
+
+  end
+
+  def get_backup_by_name(backup_name) do
+    from(b in RedstoneServer.Backup.Backup,
+      where: b.name == ^backup_name,
+      preload: :files
+    ) |> Repo.one()
+  end
+
+  def get_last_update_of_backup(backup_id) do
+    from(u in RedstoneServer.Backup.Update,
+      where: u.backup_id == ^backup_id,
+      limit: 1,
+      order_by: [desc: :inserted_at]
+    ) |> Repo.one
   end
 
   def get_backup_by_upload_token(token) do
