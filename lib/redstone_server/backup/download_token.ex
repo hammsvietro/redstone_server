@@ -13,7 +13,7 @@ defmodule RedstoneServer.Backup.DownloadToken do
 
   @doc false
   def insert_changeset(%__MODULE__{} = download_token, attrs) do
-    download_token 
+    download_token
     |> cast(attrs, [:user_id, :backup_id])
     |> put_change(:token, RedstoneServer.Crypto.generate_hash())
     |> unsafe_validate_unique(:token, RedstoneServer.Repo)

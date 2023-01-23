@@ -26,17 +26,16 @@ defmodule RedstoneServer.Backup do
 
   def get_backup(backup_id) do
     from(b in RedstoneServer.Backup.Backup,
-      where: b.id == ^backup_id,
-      preload: :files
-    ) |> Repo.one()
-
+      where: b.id == ^backup_id
+    )
+    |> Repo.one()
   end
 
   def get_backup_by_name(backup_name) do
     from(b in RedstoneServer.Backup.Backup,
-      where: b.name == ^backup_name,
-      preload: :files
-    ) |> Repo.one()
+      where: b.name == ^backup_name
+    )
+    |> Repo.one()
   end
 
   def get_last_update_of_backup(backup_id) do
@@ -44,7 +43,17 @@ defmodule RedstoneServer.Backup do
       where: u.backup_id == ^backup_id,
       limit: 1,
       order_by: [desc: :inserted_at]
-    ) |> Repo.one
+    )
+    |> Repo.one()
+  end
+
+  def get_backup_by_download_token(token) do
+    from(u in RedstoneServer.Backup.DownloadToken,
+      where: u.token == ^token,
+      left_join: b in assoc(u, :backup),
+      select: b
+    )
+    |> Repo.one()
   end
 
   def get_backup_by_upload_token(token) do

@@ -13,6 +13,7 @@ defmodule RedstoneServerWeb.Api.Upload do
          {:ok, %{backup: %{id: backup_id}, update: update}} <-
            RedstoneServer.Backup.create_backup(name, user_id, files) do
       backup = RedstoneServer.Backup.get_backup(backup_id)
+      files = RedstoneServer.Backup.get_files_by_backup(backup.id)
 
       {:ok, %UploadToken{token: token}} =
         RedstoneServer.Backup.create_upload_token(%{
@@ -23,7 +24,7 @@ defmodule RedstoneServerWeb.Api.Upload do
 
       conn
       |> put_view(RedstoneServerWeb.Json.UploadView)
-      |> render("show.json", %{backup: backup, upload_token: token, update: update})
+      |> render("show.json", %{backup: backup, upload_token: token, update: update, files: files})
     else
       %{valid?: false} = changeset -> _render_changeset_error(conn, changeset)
       {:error, changeset} -> _render_changeset_error(conn, changeset)
