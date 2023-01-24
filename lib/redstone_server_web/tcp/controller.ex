@@ -97,6 +97,7 @@ defmodule RedstoneServerWeb.Tcp.Controller do
 
       {:ok, file} = :file.open(path, [:read, :raw])
       :file.position(file, skip)
+
       case :file.read(file, byte_limit) do
         {:ok, data} -> nil
         {:error, reason} -> nil

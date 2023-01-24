@@ -21,6 +21,15 @@ defmodule RedstoneServerWeb.ErrorView do
     }
   end
 
+  def render("404.json", %{entity: entity, name: name}) do
+    %{
+      errors: %{
+        entity => "\"#{name}\" not found"
+      },
+      stringified_errors: "#{entity} \"#{name}\" not found"
+    }
+  end
+
   defp translate_errors(changeset) do
     Ecto.Changeset.traverse_errors(changeset, &translate_error/1)
   end
