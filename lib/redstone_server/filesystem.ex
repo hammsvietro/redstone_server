@@ -63,4 +63,11 @@ defmodule RedstoneServer.Filesystem do
     |> Base.encode16()
     |> String.downcase()
   end
+
+  def get_file_size(backup_name, %RedstoneServer.Backup.File{} = file) do
+    backup_name
+    |> get_file_path(file.path)
+    |> File.stat!()
+    |> Map.get(:size)
+  end
 end

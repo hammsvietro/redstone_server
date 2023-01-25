@@ -41,6 +41,10 @@ defmodule RedstoneServerWeb.Router do
     scope "/upload" do
       post "/declare", Upload, :declare
     end
+
+    scope "/download" do
+      post "/clone", Download, :clone
+    end
   end
 
   scope "/", RedstoneServerWeb.Html do

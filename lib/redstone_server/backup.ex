@@ -7,7 +7,7 @@ defmodule RedstoneServer.Backup do
   alias Ecto.Multi
   alias RedstoneServer.Repo
   alias RedstoneServer.Filesystem
-  alias RedstoneServer.Backup.{Backup, File, Update, UploadToken, FileUpdate}
+  alias RedstoneServer.Backup.{Backup, File, Update, UploadToken, DownloadToken, FileUpdate}
 
   def create_backup(name, user_id, files) do
     entrypoint = Filesystem.get_temporary_backup_entrypoint(name)
@@ -26,8 +26,32 @@ defmodule RedstoneServer.Backup do
 
   def get_backup(backup_id) do
     from(b in RedstoneServer.Backup.Backup,
-      where: b.id == ^backup_id,
-      preload: :files
+      where: b.id == ^backup_id
+    )
+    |> Repo.one()
+  end
+
+  def get_backup_by_name(backup_name) do
+    from(b in RedstoneServer.Backup.Backup,
+      where: b.name == ^backup_name
+    )
+    |> Repo.one()
+  end
+
+  def get_last_update_of_backup(backup_id) do
+    from(u in RedstoneServer.Backup.Update,
+      where: u.backup_id == ^backup_id,
+      limit: 1,
+      order_by: [desc: :inserted_at]
+    )
+    |> Repo.one()
+  end
+
+  def get_backup_by_download_token(token) do
+    from(u in RedstoneServer.Backup.DownloadToken,
+      where: u.token == ^token,
+      left_join: b in assoc(u, :backup),
+      select: b
     )
     |> Repo.one()
   end
@@ -118,7 +142,7 @@ defmodule RedstoneServer.Backup do
   Creates a upload_token.
   ## Examples
 
-      iex> create_upload_token(%{field: value})
+      iex> create_upload_token(%{user_id: user.id, backup_id: backup.id, update_id: update.id})
       {:ok, %UploadToken{}}
 
       iex> create_upload_token(%{field: bad_value})
@@ -145,6 +169,41 @@ defmodule RedstoneServer.Backup do
   """
   def delete_upload_token(token) do
     from(ut in UploadToken, where: ut.token == ^token)
+    |> Repo.one!()
+    |> Repo.delete()
+  end
+
+  @doc """
+  Creates a download_token.
+  ## Examples
+
+      iex> create_download_token(%{user_id: user.id, backup_id: backup.id})
+      {:ok, %DownloadToken{}}
+
+      iex> create_download_token(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_download_token(attrs \\ %{}) do
+    %DownloadToken{}
+    |> DownloadToken.insert_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Deletes a download_token.
+
+  ## Examples
+
+      iex> delete_upload_token(upload_token)
+      {:ok, %UploadToken{}}
+
+      iex> delete_upload_token(upload_token)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_upload_token(token) do
+    from(ut in DownloadToken, where: ut.token == ^token)
     |> Repo.one!()
     |> Repo.delete()
   end
