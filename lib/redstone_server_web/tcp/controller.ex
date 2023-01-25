@@ -89,20 +89,22 @@ defmodule RedstoneServerWeb.Tcp.Controller do
   def process(%{"operation" => "download_chunk"} = payload) do
     with %{valid?: true} <- Schemas.validate_download_chunk_message(payload),
          %Backup{} = backup <-
-           RedstoneServer.Backup.get_backup_by_download_token(payload["upload_token"]),
+           RedstoneServer.Backup.get_backup_by_download_token(payload["download_token"]),
          %RSFile{} = file <- RedstoneServer.Backup.get_file(payload["file_id"], backup.id) do
       path = Filesystem.get_file_path(backup.name, file.path)
       byte_limit = payload["byte_limit"]
       skip = payload["offset"] * byte_limit
 
-      {:ok, file} = :file.open(path, [:read, :raw])
+      {:ok, file} = :file.open(path, [:read, :binary])
       :file.position(file, skip)
 
-      case :file.read(file, byte_limit) do
-        {:ok, data} -> nil
-        {:error, reason} -> nil
-        :eof -> nil
+      result = case :file.read(file, byte_limit) do
+        :eof -> {:ok, nil}
+        {:ok, data} -> {:ok, data}
+        error -> error
       end
+      Process.exit(file, :normal)
+      result
     end
   end
 

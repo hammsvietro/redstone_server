@@ -22,7 +22,7 @@ defmodule RedstoneServerWeb.Tcp.ConnectionHandler do
     result =
       data
       |> RedstoneServerWeb.Tcp.Controller.process()
-      |> wrap_response()
+      |> _wrap_response()
       |> Cyanide.encode!()
 
     :ok = :gen_tcp.send(socket, result)
@@ -39,9 +39,10 @@ defmodule RedstoneServerWeb.Tcp.ConnectionHandler do
     {:stop, :normal, state}
   end
 
-  defp wrap_response(response) do
+  defp _wrap_response(response) do
     case response do
       {:error, error} -> %{status: "error", reason: error}
+      {:ok, data} -> %{status: "ok", data: data}
       :ok -> %{status: "ok"}
     end
   end
