@@ -196,14 +196,14 @@ defmodule RedstoneServer.Backup do
 
   ## Examples
 
-      iex> delete_upload_token(upload_token)
-      {:ok, %UploadToken{}}
+    iex> delete_download_token(download_token)
+      {:ok, %DownloadToken{}}
 
-      iex> delete_upload_token(upload_token)
+      iex> delete_download_token(download_token)
       {:error, %Ecto.Changeset{}}
 
   """
-  def delete_upload_token(token) do
+  def delete_download_token(token) do
     from(ut in DownloadToken, where: ut.token == ^token)
     |> Repo.one!()
     |> Repo.delete()

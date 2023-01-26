@@ -35,11 +35,11 @@ defmodule RedstoneServerWeb.Api.Upload do
     end
   end
 
-  defp get_total_size(files) do
-    files
-    |> Enum.map(fn file -> file["size"] end)
-    |> Enum.sum()
-  end
+  # defp get_total_size(files) do
+  #   files
+  #   |> Enum.map(fn file -> file["size"] end)
+  #   |> Enum.sum()
+  # end
 
   defp _render_changeset_error(conn, changeset) do
     conn

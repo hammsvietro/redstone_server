@@ -8,7 +8,7 @@ defmodule RedstoneServer.Schema do
       use Ecto.Schema
       import Ecto.Changeset
 
-      defimpl Jason.Encoder, for: __MODULE__ do
+      defimpl Jason.Encoder, for: [__MODULE__] do
         def encode(struct, opts) do
           Enum.reduce(Map.from_struct(struct), %{}, fn
             {_k, %Ecto.Association.NotLoaded{}}, acc -> acc

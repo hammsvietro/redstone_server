@@ -11,7 +11,7 @@ defmodule RedstoneServer.Accounts.User do
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :naive_datetime
-    has_many :backups, RedstoneServer.Backup.Backup
+    has_many :backups, RedstoneServer.Backup.Backup, foreign_key: :created_by_id
 
     timestamps()
   end

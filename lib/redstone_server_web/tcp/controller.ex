@@ -108,7 +108,7 @@ defmodule RedstoneServerWeb.Tcp.Controller do
     end
   end
 
-  def process(%{"operation" => "abort"} = payload) do
+  def process(%{"operation" => "abort"} = _payload) do
     # TODO: implement it
   end
 end
