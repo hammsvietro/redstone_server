@@ -15,6 +15,7 @@
         {Credo.Check.Design.DuplicatedCode},
         {Credo.Check.Readability.FunctionNames},
         {Credo.Check.Warning.MapGetUnsafePass},
+        {Credo.Check.Design.TagTODO, false},
         {Credo.Check.Warning.OperationOnSameValues, priority: :normal}
       ]
     }

@@ -30,6 +30,7 @@ defmodule RedstoneServer.Backup do
       where: b.id == ^backup_id
     )
     |> Repo.one()
+    |> Repo.preload([:created_by])
   end
 
   def get_backup_by_name(backup_name) do
