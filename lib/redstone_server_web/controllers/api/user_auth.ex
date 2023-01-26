@@ -1,7 +1,11 @@
 defmodule RedstoneServerWeb.Api.UserAuth do
+  @moduledoc """
+  Authentication API controller
+  """
+
   use RedstoneServerWeb, :controller
 
-  import RedstoneServerWeb.Api.Schemas.UserLogin, only: [validate_user_login: 1]
+  import RedstoneServerWeb.Api.Schemas.UserAuth, only: [validate_user_login: 1]
   alias RedstoneServer.Accounts.User
   alias RedstoneServer.Accounts
   alias RedstoneServerWeb.UserAuth

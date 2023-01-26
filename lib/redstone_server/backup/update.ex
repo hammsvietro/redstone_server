@@ -1,4 +1,8 @@
 defmodule RedstoneServer.Backup.Update do
+  @moduledoc """
+  Update schema module. 
+  """
+
   use RedstoneServer.Schema
 
   @primary_key {:id, :binary_id, autogenerate: true}

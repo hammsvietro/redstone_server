@@ -1,4 +1,8 @@
 defmodule RedstoneServerWeb.UserAuth do
+  @moduledoc """
+  Service layer for authentication
+  """
+
   import Plug.Conn
   import Phoenix.Controller
 

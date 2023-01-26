@@ -1,4 +1,8 @@
 defmodule RedstoneServerWeb.Api.Upload do
+  @moduledoc """
+  Upload API controller
+  """
+
   use RedstoneServerWeb, :controller
   alias RedstoneServer.Backup.UploadToken
   alias RedstoneServerWeb.Api.Schemas.Upload, as: UploadValidators

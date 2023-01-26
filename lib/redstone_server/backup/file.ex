@@ -1,4 +1,8 @@
 defmodule RedstoneServer.Backup.File do
+  @moduledoc """
+  File schema module.
+  """
+
   use RedstoneServer.Schema
 
   alias RedstoneServer.Filesystem

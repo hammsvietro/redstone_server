@@ -1,4 +1,8 @@
 defmodule RedstoneServer.Accounts.UserNotifier do
+  @moduledoc """
+  Service layer for user notifications.
+  """
+
   import Bamboo.Email
   alias RedstoneServer.Mailer
 

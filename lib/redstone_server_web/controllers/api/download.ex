@@ -1,4 +1,8 @@
 defmodule RedstoneServerWeb.Api.Download do
+  @moduledoc """
+  Download API controller
+  """
+
   use RedstoneServerWeb, :controller
 
   alias RedstoneServer.Backup.{Backup, Update, DownloadToken}

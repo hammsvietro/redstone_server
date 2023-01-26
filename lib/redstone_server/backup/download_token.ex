@@ -1,4 +1,10 @@
 defmodule RedstoneServer.Backup.DownloadToken do
+  @moduledoc """
+  Download token schema module.
+
+  This is used as a validation token when the client is downloading data.
+  """
+
   use RedstoneServer.Schema
 
   @primary_key {:id, :binary_id, autogenerate: true}

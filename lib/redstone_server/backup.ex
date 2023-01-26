@@ -1,7 +1,8 @@
 defmodule RedstoneServer.Backup do
   @moduledoc """
-  Service layer for the backup context
+  Service layer for the backup context.
   """
+
   import Ecto.Query
 
   alias Ecto.Multi

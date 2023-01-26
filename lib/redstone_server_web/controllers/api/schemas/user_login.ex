@@ -1,4 +1,7 @@
-defmodule RedstoneServerWeb.Api.Schemas.UserLogin do
+defmodule RedstoneServerWeb.Api.Schemas.UserAuth do
+  @moduledoc """
+  Validators for the authentication API Controller
+  """
   use Ecto.Schema
   import Ecto.Changeset
 

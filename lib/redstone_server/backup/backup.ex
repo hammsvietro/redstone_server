@@ -1,4 +1,7 @@
 defmodule RedstoneServer.Backup.Backup do
+  @moduledoc """
+  Backup schema module.
+  """
   use RedstoneServer.Schema
 
   @primary_key {:id, :binary_id, autogenerate: true}

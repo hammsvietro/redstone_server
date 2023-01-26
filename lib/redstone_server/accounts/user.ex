@@ -1,4 +1,7 @@
 defmodule RedstoneServer.Accounts.User do
+  @moduledoc """
+  User schema module.
+  """
   use RedstoneServer.Schema
 
   @primary_key {:id, :binary_id, autogenerate: true}

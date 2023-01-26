@@ -1,4 +1,7 @@
 defmodule RedstoneServer.Accounts.UserToken do
+  @moduledoc """
+  User token schema module
+  """
   use Ecto.Schema
   import Ecto.Query
   alias RedstoneServer.Accounts.UserToken

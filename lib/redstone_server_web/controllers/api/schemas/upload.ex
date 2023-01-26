@@ -1,4 +1,7 @@
 defmodule RedstoneServerWeb.Api.Schemas.Upload do
+  @moduledoc """
+  Validators for the download API Controller
+  """
   import Ecto.Changeset
   use Ecto.Schema
 

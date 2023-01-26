@@ -1,4 +1,9 @@
 defmodule RedstoneServer.Backup.UploadToken do
+  @moduledoc """
+  Upload token schema module.
+
+  This is used as a validation token when the client is uploading data.
+  """
   use RedstoneServer.Schema
 
   @primary_key {:id, :binary_id, autogenerate: true}
