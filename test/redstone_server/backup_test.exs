@@ -38,6 +38,5 @@ defmodule RedstoneServer.BackupTest do
       %DownloadToken{} = download_token = download_token_fixture()
       %Backup.Backup{} = Backup.get_backup_by_download_token(download_token.token)
     end
-
   end
 end

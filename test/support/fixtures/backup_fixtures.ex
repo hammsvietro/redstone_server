@@ -11,14 +11,24 @@ defmodule RedstoneServer.BackupFixtures do
   """
   def backup_fixture(attrs \\ %{}) do
     backup_name = Map.get(attrs, :backup_name, "test")
-    user_id = case Map.get(attrs, :user_id) do
-      nil -> {:ok, user} =
-        RedstoneServer.Accounts.register_user(%{email: "admin@admin.com", password: "123123123123"})
-        user.id
-      user_id -> user_id
-    end
+
+    user_id =
+      case Map.get(attrs, :user_id) do
+        nil ->
+          {:ok, user} =
+            RedstoneServer.Accounts.register_user(%{
+              email: "admin@admin.com",
+              password: "123123123123"
+            })
+
+          user.id
+
+        user_id ->
+          user_id
+      end
+
     files = Map.get(attrs, :files, [])
-    
+
     {:ok, %{backup: backup, update: update}} =
       RedstoneServer.Backup.create_backup(backup_name, user_id, files)
 
@@ -32,8 +42,8 @@ defmodule RedstoneServer.BackupFixtures do
     {:ok, user} =
       RedstoneServer.Accounts.register_user(%{email: "admin@admin.com", password: "123123123123"})
 
-
     {backup, update} = backup_fixture(%{user_id: user.id})
+
     attrs = %{
       backup_id: backup.id,
       update_id: update.id,
