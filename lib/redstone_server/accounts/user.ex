@@ -1,6 +1,11 @@
 defmodule RedstoneServer.Accounts.User do
-  use RedstoneServer.Schema
+  @moduledoc """
+  User schema module.
+  """
+  use Ecto.Schema
+  import Ecto.Changeset
 
+  @derive {Jason.Encoder, except: [:__meta__, :password, :hashed_password]}
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "users" do
@@ -8,7 +13,7 @@ defmodule RedstoneServer.Accounts.User do
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :naive_datetime
-    has_many :backups, RedstoneServer.Backup.Backup
+    has_many :backups, RedstoneServer.Backup.Backup, foreign_key: :created_by_id
 
     timestamps()
   end

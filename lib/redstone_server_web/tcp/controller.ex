@@ -98,17 +98,19 @@ defmodule RedstoneServerWeb.Tcp.Controller do
       {:ok, file} = :file.open(path, [:read, :binary])
       :file.position(file, skip)
 
-      result = case :file.read(file, byte_limit) do
-        :eof -> {:ok, nil}
-        {:ok, data} -> {:ok, data}
-        error -> error
-      end
+      result =
+        case :file.read(file, byte_limit) do
+          :eof -> {:ok, nil}
+          {:ok, data} -> {:ok, data}
+          error -> error
+        end
+
       Process.exit(file, :normal)
       result
     end
   end
 
-  def process(%{"operation" => "abort"} = payload) do
+  def process(%{"operation" => "abort"} = _payload) do
     # TODO: implement it
   end
 end

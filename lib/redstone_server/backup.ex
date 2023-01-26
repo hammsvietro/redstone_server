@@ -1,7 +1,8 @@
 defmodule RedstoneServer.Backup do
   @moduledoc """
-  Service layer for the backup context
+  Service layer for the backup context.
   """
+
   import Ecto.Query
 
   alias Ecto.Multi
@@ -29,6 +30,7 @@ defmodule RedstoneServer.Backup do
       where: b.id == ^backup_id
     )
     |> Repo.one()
+    |> Repo.preload([:created_by])
   end
 
   def get_backup_by_name(backup_name) do
@@ -195,14 +197,14 @@ defmodule RedstoneServer.Backup do
 
   ## Examples
 
-      iex> delete_upload_token(upload_token)
-      {:ok, %UploadToken{}}
+    iex> delete_download_token(download_token)
+      {:ok, %DownloadToken{}}
 
-      iex> delete_upload_token(upload_token)
+      iex> delete_download_token(download_token)
       {:error, %Ecto.Changeset{}}
 
   """
-  def delete_upload_token(token) do
+  def delete_download_token(token) do
     from(ut in DownloadToken, where: ut.token == ^token)
     |> Repo.one!()
     |> Repo.delete()

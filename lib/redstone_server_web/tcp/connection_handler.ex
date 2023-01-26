@@ -1,5 +1,5 @@
 defmodule RedstoneServerWeb.Tcp.ConnectionHandler do
-  @doc """
+  @moduledoc """
   Genserver for handling an individual tcp connection.
   """
   use GenServer

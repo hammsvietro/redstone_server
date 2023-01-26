@@ -1,6 +1,14 @@
 defmodule RedstoneServer.Backup.DownloadToken do
-  use RedstoneServer.Schema
+  @moduledoc """
+  Download token schema module.
 
+  This is used as a validation token when the client is downloading data.
+  """
+
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @derive {Jason.Encoder, except: [:__meta__]}
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "download_tokens" do

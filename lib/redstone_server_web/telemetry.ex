@@ -1,4 +1,7 @@
 defmodule RedstoneServerWeb.Telemetry do
+  @moduledoc """
+  Supervisor for telemetry poller
+  """
   use Supervisor
   import Telemetry.Metrics
 

@@ -49,7 +49,8 @@ defmodule RedstoneServer.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:cyanide, "~> 1.0"},
-      {:bamboo, "~> 2.3.0"}
+      {:bamboo, "~> 2.3.0"},
+      {:credo, "~> 1.5", only: [:dev, :test], runtime: false}
     ]
   end
 
