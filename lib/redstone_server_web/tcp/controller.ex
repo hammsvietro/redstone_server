@@ -66,7 +66,7 @@ defmodule RedstoneServerWeb.Tcp.Controller do
          %RedstoneServer.Backup.File{} = file <-
            RedstoneServer.Backup.get_file(payload["file_id"], backup.id),
          true <-
-           RedstoneServer.Filesystem.verify_checksum(
+           Filesystem.verify_checksum(
              file.sha256_checksum,
              Filesystem.get_temporary_file_path(backup.name, file.path)
            ) do
@@ -95,18 +95,14 @@ defmodule RedstoneServerWeb.Tcp.Controller do
       byte_limit = payload["byte_limit"]
       skip = payload["offset"] * byte_limit
 
-      {:ok, file} = :file.open(path, [:read, :binary])
+      {:ok, file} = :file.open(path, [:read, :raw])
       :file.position(file, skip)
 
-      result =
-        case :file.read(file, byte_limit) do
-          :eof -> {:ok, nil}
-          {:ok, data} -> {:ok, data}
-          error -> error
-        end
-
-      Process.exit(file, :normal)
-      result
+      case :file.read(file, byte_limit) do
+        :eof -> {:ok, nil}
+        {:ok, data} -> {:ok, data}
+        error -> error
+      end
     end
   end
 
