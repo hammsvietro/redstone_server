@@ -42,7 +42,10 @@ defmodule RedstoneServer.BackupFixtures do
     {:ok, user} =
       RedstoneServer.Accounts.register_user(%{email: "admin@admin.com", password: "123123123123"})
 
-    {backup, update} = backup_fixture(%{user_id: user.id})
+    {backup, update} =
+      attrs
+      |> Map.merge(%{user_id: user.id})
+      |> backup_fixture()
 
     attrs = %{
       backup_id: backup.id,
@@ -50,7 +53,7 @@ defmodule RedstoneServer.BackupFixtures do
       user_id: user.id
     }
 
-    {:ok, upload_token} = attrs |> RedstoneServer.Backup.create_upload_token()
+    {:ok, upload_token} = RedstoneServer.Backup.create_upload_token(attrs)
 
     upload_token
   end

@@ -101,27 +101,18 @@ defmodule RedstoneServer.Backup do
     |> Repo.all()
   end
 
-  # def get_files_changed_in_update(update_id, opts) do
-  #   Enum.reduce 
-  # end
+  def get_files_changed_since_update(%Update{} = update, opts \\ []) do
+    RedstoneServer.Backup.FileUpdate
+    |> where([fu], fu.inserted_at > ^update.inserted_at and fu.backup_id == ^update.backup_id)
+    |> join(:left, [fu], f in assoc(fu, :file))
+    |> select([_, f], f)
+    |> Repo.all()
+  end
 
   def update_update_status(%Update{} = update, status) do
     update
     |> RedstoneServer.Backup.Update.update_status_changeset(status)
     |> Repo.update()
-  end
-
-  @doc """
-  Returns the list of upload_tokens.
-
-  ## Examples
-
-      iex> list_upload_tokens()
-      [%UploadToken{}, ...]
-
-  """
-  def list_upload_tokens do
-    Repo.all(UploadToken)
   end
 
   @doc """
@@ -210,6 +201,22 @@ defmodule RedstoneServer.Backup do
     |> Repo.delete()
   end
 
+  @doc """
+  Gets a single download_token.
+
+  Raises `Ecto.NoResultsError` if the Downdate token does not exist.
+
+  ## Examples
+
+      iex> get_download_token!(123)
+      %DownloadToken{}
+
+      iex> get_download_token!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_download_token!(id), do: Repo.get!(DownloadToken, id)
+
   defp _create_backup_multi(multi, name, user_id, path) do
     multi
     |> Multi.insert(
@@ -249,13 +256,14 @@ defmodule RedstoneServer.Backup do
         end)
         |> Multi.insert(
           file_path <> "-update",
-          fn %{^file_path => file, update: update} ->
+          fn %{^file_path => file, update: update, backup: backup} ->
             FileUpdate.changeset(
               %FileUpdate{},
               %{
                 "file_id" => file.id,
                 "update_id" => update.id,
-                "operation" => :add
+                "backup_id" => update.id,
+                "operation" => backup.id
               }
             )
           end

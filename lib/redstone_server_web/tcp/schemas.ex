@@ -30,6 +30,18 @@ defmodule RedstoneServerWeb.Tcp.Schemas do
     |> validate_required(Map.keys(types))
   end
 
+  def validate_finish_download_message(params) do
+    download_chunk = %{}
+
+    types = %{
+      download_token: :string
+    }
+
+    {download_chunk, types}
+    |> cast(params, Map.keys(types))
+    |> validate_required(Map.keys(types))
+  end
+
   def validate_commit_message(params) do
     upload_chunk = %{}
     types = %{upload_token: :string}

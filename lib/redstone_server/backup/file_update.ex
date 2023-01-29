@@ -12,6 +12,7 @@ defmodule RedstoneServer.Backup.FileUpdate do
     field :operation, Ecto.Enum, values: [:add, :update, :remove]
     belongs_to :file, RedstoneServer.Backup.File, type: :binary_id
     belongs_to :update, RedstoneServer.Backup.Update, type: :binary_id
+    belongs_to :backup, RedstoneServer.Backup.Backup, type: :binary_id
 
     timestamps()
   end
