@@ -101,14 +101,6 @@ defmodule RedstoneServer.Backup do
     |> Repo.all()
   end
 
-  def get_files_changed_since_update(%Update{} = update, opts \\ []) do
-    RedstoneServer.Backup.FileUpdate
-    |> where([fu], fu.inserted_at > ^update.inserted_at and fu.backup_id == ^update.backup_id)
-    |> join(:left, [fu], f in assoc(fu, :file))
-    |> select([_, f], f)
-    |> Repo.all()
-  end
-
   def update_update_status(%Update{} = update, status) do
     update
     |> RedstoneServer.Backup.Update.update_status_changeset(status)
@@ -263,7 +255,7 @@ defmodule RedstoneServer.Backup do
                 "file_id" => file.id,
                 "update_id" => update.id,
                 "backup_id" => update.id,
-                "operation" => backup.id
+                "operation" => :add
               }
             )
           end

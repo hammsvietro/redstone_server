@@ -14,6 +14,7 @@ defmodule RedstoneServer.Backup.File do
   schema "files" do
     field :path, :string
     field :sha256_checksum, :string
+    field :last_update, :any, virtual: true
     belongs_to :backup, RedstoneServer.Backup.Backup, type: :binary_id
 
     timestamps()

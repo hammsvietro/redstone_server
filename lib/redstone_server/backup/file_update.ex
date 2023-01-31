@@ -20,7 +20,7 @@ defmodule RedstoneServer.Backup.FileUpdate do
   @doc false
   def changeset(file_update, attrs) do
     file_update
-    |> cast(attrs, [:operation, :file_id, :update_id])
+    |> cast(attrs, [:operation, :file_id, :update_id, :backup_id])
     |> validate_required([:operation])
   end
 end
