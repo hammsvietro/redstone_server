@@ -101,6 +101,34 @@ defmodule RedstoneServer.Backup do
     |> Repo.all()
   end
 
+  @doc """
+  Gets a Update by a given id.
+  """
+  def get_update(update_id) do
+    from(u in RedstoneServer.Backup.Update, where: u.id == ^update_id)
+    |> Repo.one()
+  end
+
+  @doc """
+  Returns all files that has been changed since the last update with last_update field loaded
+  """
+  def get_files_changed_since_update(%Update{} = update) do
+    files_changed_subquery =
+      RedstoneServer.Backup.FileUpdate
+      |> where([fu], fu.inserted_at > ^update.inserted_at)
+      |> group_by([fu], fu.file_id)
+      |> select([fu], fu.file_id)
+
+    RedstoneServer.Backup.FileUpdate
+    |> join(:left, [fu1], fu2 in RedstoneServer.Backup.FileUpdate,
+      on: fu1.file_id == fu2.file_id and fu1.inserted_at < fu2.inserted_at
+    )
+    |> join(:inner, [fu1], file in assoc(fu1, :file))
+    |> where([fu1, fu2], is_nil(fu2) and fu1.file_id in subquery(files_changed_subquery))
+    |> select([_, _, file], file)
+    |> select_merge([f1], %{last_update: f1})
+  end
+
   def update_update_status(%Update{} = update, status) do
     update
     |> RedstoneServer.Backup.Update.update_status_changeset(status)
