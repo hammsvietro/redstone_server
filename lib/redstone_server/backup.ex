@@ -83,7 +83,13 @@ defmodule RedstoneServer.Backup do
   end
 
   def get_files_by_backup(backup_id) do
-    from(f in RedstoneServer.Backup.File, where: f.backup_id == ^backup_id)
+    changed_file_ids_subquery =
+      RedstoneServer.Backup.FileUpdate
+      |> where([fu], fu.backup_id == ^backup_id)
+      |> group_by([fu], fu.file_id)
+      |> select([fu], fu.file_id)
+
+    _build_files_changed_query(changed_file_ids_subquery)
     |> Repo.all()
   end
 
@@ -101,27 +107,32 @@ defmodule RedstoneServer.Backup do
     |> Repo.all()
   end
 
-  # def get_files_changed_in_update(update_id, opts) do
-  #   Enum.reduce 
-  # end
+  @doc """
+  Gets a Update by a given id.
+  """
+  def get_update(update_id) do
+    from(u in RedstoneServer.Backup.Update, where: u.id == ^update_id)
+    |> Repo.one()
+  end
+
+  @doc """
+  Returns all files that has been changed since the last update with last_update field loaded
+  """
+  def get_files_changed_since_update(%Update{} = update) do
+    changed_file_ids_subquery =
+      RedstoneServer.Backup.FileUpdate
+      |> where([fu], fu.inserted_at > ^update.inserted_at and fu.backup_id == ^update.backup_id)
+      |> group_by([fu], fu.file_id)
+      |> select([fu], fu.file_id)
+
+    _build_files_changed_query(changed_file_ids_subquery)
+    |> Repo.all()
+  end
 
   def update_update_status(%Update{} = update, status) do
     update
     |> RedstoneServer.Backup.Update.update_status_changeset(status)
     |> Repo.update()
-  end
-
-  @doc """
-  Returns the list of upload_tokens.
-
-  ## Examples
-
-      iex> list_upload_tokens()
-      [%UploadToken{}, ...]
-
-  """
-  def list_upload_tokens do
-    Repo.all(UploadToken)
   end
 
   @doc """
@@ -210,6 +221,22 @@ defmodule RedstoneServer.Backup do
     |> Repo.delete()
   end
 
+  @doc """
+  Gets a single download_token.
+
+  Raises `Ecto.NoResultsError` if the Downdate token does not exist.
+
+  ## Examples
+
+      iex> get_download_token!(123)
+      %DownloadToken{}
+
+      iex> get_download_token!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_download_token!(id), do: Repo.get!(DownloadToken, id)
+
   defp _create_backup_multi(multi, name, user_id, path) do
     multi
     |> Multi.insert(
@@ -249,17 +276,29 @@ defmodule RedstoneServer.Backup do
         end)
         |> Multi.insert(
           file_path <> "-update",
-          fn %{^file_path => file, update: update} ->
+          fn %{^file_path => file, update: update, backup: backup} ->
             FileUpdate.changeset(
               %FileUpdate{},
               %{
                 "file_id" => file.id,
                 "update_id" => update.id,
+                "backup_id" => backup.id,
                 "operation" => :add
               }
             )
           end
         )
     end)
+  end
+
+  def _build_files_changed_query(files_changed_subquery) do
+    RedstoneServer.Backup.FileUpdate
+    |> join(:left, [fu1], fu2 in RedstoneServer.Backup.FileUpdate,
+      on: fu1.file_id == fu2.file_id and fu1.inserted_at < fu2.inserted_at
+    )
+    |> join(:inner, [fu1], file in assoc(fu1, :file))
+    |> where([fu1, fu2], is_nil(fu2) and fu1.file_id in subquery(files_changed_subquery))
+    |> select([_, _, file], file)
+    |> select_merge([f1], %{last_update: f1})
   end
 end

@@ -106,6 +106,11 @@ defmodule RedstoneServerWeb.Tcp.Controller do
     end
   end
 
+  def process(%{"operation" => "finish_download"} = payload) do
+    RedstoneServer.Backup.delete_download_token(payload["download_token"])
+    :ok
+  end
+
   def process(%{"operation" => "abort"} = _payload) do
     # TODO: implement it
   end
