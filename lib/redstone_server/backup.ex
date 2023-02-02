@@ -83,20 +83,13 @@ defmodule RedstoneServer.Backup do
   end
 
   def get_files_by_backup(backup_id) do
-    files_changed_subquery =
+    changed_file_ids_subquery =
       RedstoneServer.Backup.FileUpdate
       |> where([fu], fu.backup_id == ^backup_id)
       |> group_by([fu], fu.file_id)
       |> select([fu], fu.file_id)
 
-    RedstoneServer.Backup.FileUpdate
-    |> join(:left, [fu1], fu2 in RedstoneServer.Backup.FileUpdate,
-      on: fu1.file_id == fu2.file_id and fu1.inserted_at < fu2.inserted_at
-    )
-    |> join(:inner, [fu1], file in assoc(fu1, :file))
-    |> where([fu1, fu2], is_nil(fu2) and fu1.file_id in subquery(files_changed_subquery))
-    |> select([_, _, file], file)
-    |> select_merge([f1], %{last_update: f1})
+    _build_files_changed_query(changed_file_ids_subquery)
     |> Repo.all()
   end
 
@@ -126,20 +119,13 @@ defmodule RedstoneServer.Backup do
   Returns all files that has been changed since the last update with last_update field loaded
   """
   def get_files_changed_since_update(%Update{} = update) do
-    files_changed_subquery =
+    changed_file_ids_subquery =
       RedstoneServer.Backup.FileUpdate
       |> where([fu], fu.inserted_at > ^update.inserted_at and fu.backup_id == ^update.backup_id)
       |> group_by([fu], fu.file_id)
       |> select([fu], fu.file_id)
 
-    RedstoneServer.Backup.FileUpdate
-    |> join(:left, [fu1], fu2 in RedstoneServer.Backup.FileUpdate,
-      on: fu1.file_id == fu2.file_id and fu1.inserted_at < fu2.inserted_at
-    )
-    |> join(:inner, [fu1], file in assoc(fu1, :file))
-    |> where([fu1, fu2], is_nil(fu2) and fu1.file_id in subquery(files_changed_subquery))
-    |> select([_, _, file], file)
-    |> select_merge([f1], %{last_update: f1})
+    _build_files_changed_query(changed_file_ids_subquery)
     |> Repo.all()
   end
 
@@ -303,5 +289,16 @@ defmodule RedstoneServer.Backup do
           end
         )
     end)
+  end
+
+  def _build_files_changed_query(files_changed_subquery) do
+    RedstoneServer.Backup.FileUpdate
+    |> join(:left, [fu1], fu2 in RedstoneServer.Backup.FileUpdate,
+      on: fu1.file_id == fu2.file_id and fu1.inserted_at < fu2.inserted_at
+    )
+    |> join(:inner, [fu1], file in assoc(fu1, :file))
+    |> where([fu1, fu2], is_nil(fu2) and fu1.file_id in subquery(files_changed_subquery))
+    |> select([_, _, file], file)
+    |> select_merge([f1], %{last_update: f1})
   end
 end
