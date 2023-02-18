@@ -102,7 +102,7 @@ defmodule RedstoneServer.Backup do
       |> group_by([fu], fu.file_id)
       |> select([fu], fu.file_id)
 
-    _build_files_changed_query(changed_file_ids_subquery)
+    _build_files_changed_query(changed_file_ids_subquery, with_transaction_status: :completed)
     |> Repo.all()
   end
 
@@ -110,13 +110,13 @@ defmodule RedstoneServer.Backup do
     query =
       RedstoneServer.Backup.FileUpdate
       |> where([fu], fu.update_id == ^update_id)
-      |> join(:left, [fu], f in assoc(fu, :file))
-      |> select([_, f], f)
+      |> select([fu], fu.file_id)
 
     Enum.reduce(opts, query, fn
       {:operations, operations}, query -> where(query, [fu], fu.operation in ^operations)
       _, query -> query
     end)
+    |> _build_files_changed_query()
     |> Repo.all()
   end
 
@@ -138,7 +138,7 @@ defmodule RedstoneServer.Backup do
       |> group_by([fu], fu.file_id)
       |> select([fu], fu.file_id)
 
-    _build_files_changed_query(changed_file_ids_subquery)
+    _build_files_changed_query(changed_file_ids_subquery, with_transaction_status: :completed)
     |> Repo.all()
   end
 
@@ -294,7 +294,7 @@ defmodule RedstoneServer.Backup do
             FileUpdate.changeset(
               %FileUpdate{},
               %{
-                "file_id" => file.id,
+                "file_id" => db_file.id,
                 "update_id" => update.id,
                 "backup_id" => backup.id,
                 "operation" => operation
@@ -309,15 +309,12 @@ defmodule RedstoneServer.Backup do
     Multi.insert(
       multi,
       :update,
-      Multi.insert(
-        :update,
-        RedstoneServer.Backup.Update.insert_changeset(%Update{}, %{
-          "backup_id" => backup.id,
-          "made_by_id" => user_id,
-          "message" => "Push",
-          "hash" => RedstoneServer.Crypto.generate_hash()
-        })
-      )
+      RedstoneServer.Backup.Update.insert_changeset(%Update{}, %{
+        "backup_id" => backup.id,
+        "made_by_id" => user_id,
+        "message" => "Push",
+        "hash" => RedstoneServer.Crypto.generate_hash()
+      })
     )
   end
 
@@ -331,36 +328,47 @@ defmodule RedstoneServer.Backup do
         |> _handle_file_for_operation(file, operation)
         |> Multi.insert(
           file_path <> "-update",
-          fn %{^file_path => file, update: update} ->
-            FileUpdate.changeset(
-              %FileUpdate{},
-              %{
-                "file_id" => file.id,
-                "update_id" => update.id,
-                "backup_id" => backup.id,
-                "operation" => operation
-              }
-            )
+          fn
+            %{^file_path => file, update: update} ->
+              FileUpdate.changeset(
+                %FileUpdate{},
+                %{
+                  "file_id" => file.id,
+                  "update_id" => update.id,
+                  "backup_id" => backup.id,
+                  "operation" => operation
+                }
+              )
+
+            %{update: update} ->
+              file =
+                from(f in RedstoneServer.Backup.File,
+                  where: f.path == ^file_path and f.backup_id == ^backup.id
+                )
+                |> Repo.one!()
+
+              FileUpdate.changeset(
+                %FileUpdate{},
+                %{
+                  "file_id" => file.id,
+                  "update_id" => update.id,
+                  "backup_id" => backup.id,
+                  "operation" => operation
+                }
+              )
           end
         )
     end)
   end
 
-  defp _handle_file_for_operation(multi, file, "remove") do
-    file_path = file["path"]
-
-    Multi.delete(multi, file_path, fn %{backup: backup} ->
-      from(f in File, where: f.path == ^file_path and f.backup_id == ^backup.id)
-      |> Repo.one!()
-    end)
-  end
+  defp _handle_file_for_operation(multi, _file, "remove"), do: multi
 
   defp _handle_file_for_operation(multi, file, "update") do
     file_path = file["path"]
 
-    Multi.update(multi, file_path, fn %{backup: backup} ->
+    Multi.update(multi, file_path, fn %{update: update} ->
       db_file =
-        from(f in File, where: f.path == ^file_path and f.backup_id == ^backup.id)
+        from(f in File, where: f.path == ^file_path and f.backup_id == ^update.backup_id)
         |> Repo.one!()
 
       File.changeset(db_file, file)
@@ -371,31 +379,40 @@ defmodule RedstoneServer.Backup do
     file_path = file["path"]
 
     Multi.insert(multi, file_path, fn
-      %{backup: backup} ->
+      %{update: update} ->
         File.changeset(
           %File{},
           %{
             "path" => file_path,
             "sha256_checksum" => file["sha_256_digest"],
-            "backup_id" => backup.id
+            "backup_id" => update.backup_id
           }
         )
     end)
   end
 
-  defp _build_files_changed_query(files_changed_subquery) do
-    RedstoneServer.Backup.FileUpdate
-    |> join(:left, [fu1], fu2 in RedstoneServer.Backup.FileUpdate,
-      on: fu1.file_id == fu2.file_id and fu1.inserted_at < fu2.inserted_at
-    )
-    |> join(:inner, [fu1], file in assoc(fu1, :file))
-    |> join(:inner, [fu1], update in assoc(fu1, :update))
-    |> where(
-      [fu1, fu2, _, update],
-      is_nil(fu2) and update.transaction_status == :completed and
-        fu1.file_id in subquery(files_changed_subquery)
-    )
-    |> select([_, _, file], file)
-    |> select_merge([f1], %{last_update: f1})
+  defp _build_files_changed_query(files_changed_subquery, opts \\ []) do
+    query =
+      RedstoneServer.Backup.FileUpdate
+      |> join(:left, [fu1], fu2 in RedstoneServer.Backup.FileUpdate,
+        on: fu1.file_id == fu2.file_id and fu1.inserted_at < fu2.inserted_at
+      )
+      |> join(:inner, [fu1], file in assoc(fu1, :file))
+      |> join(:inner, [fu1], update in assoc(fu1, :update))
+      |> where(
+        [fu1, fu2],
+        is_nil(fu2) and
+          fu1.file_id in subquery(files_changed_subquery)
+      )
+      |> select([_, _, file], file)
+      |> select_merge([f1], %{last_update: f1})
+
+    Enum.reduce(opts, query, fn
+      {:with_transaction_status, status}, query ->
+        where(query, [_, _, _, update], update.transaction_status == ^status)
+
+      _, query ->
+        query
+    end)
   end
 end

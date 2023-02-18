@@ -17,7 +17,8 @@ defmodule RedstoneServerWeb.Api.Upload do
          {:ok, %{backup: %{id: backup_id}, update: update}} <-
            RedstoneServer.Backup.create_backup(name, user_id, files) do
       backup = RedstoneServer.Backup.get_backup(backup_id)
-      files = RedstoneServer.Backup.get_files_by_backup(backup.id)
+
+      files = RedstoneServer.Backup.get_files_changed_in_update(update.id)
 
       {:ok, %UploadToken{token: token}} =
         RedstoneServer.Backup.create_upload_token(%{
@@ -41,25 +42,21 @@ defmodule RedstoneServerWeb.Api.Upload do
     with %{
            valid?: true,
            changes: %{backup_id: backup_id, files: files}
-         } <- UploadValidators.validate_push(params) do
-      backup = RedstoneServer.Backup.get_backup(backup_id)
-      {:ok, %{update: update}} = RedstoneServer.Backup.update_files(backup, files, user_id)
-
-      backup = RedstoneServer.Backup.get_backup(backup_id)
-      files = RedstoneServer.Backup.get_files_changed_in_update(update.id)
-
-      {:ok, %UploadToken{token: token}} =
-        RedstoneServer.Backup.create_upload_token(%{
-          backup_id: backup.id,
-          user_id: user_id,
-          update_id: update.id
-        })
+         } <- UploadValidators.validate_push(params),
+         %RedstoneServer.Backup.Backup{} = backup <- RedstoneServer.Backup.get_backup(backup_id),
+         {:ok, %{update: update}} <- RedstoneServer.Backup.update_files(backup, files, user_id),
+         files <- RedstoneServer.Backup.get_files_changed_in_update(update.id),
+         {:ok, %UploadToken{token: token}} <-
+           RedstoneServer.Backup.create_upload_token(%{
+             backup_id: backup.id,
+             user_id: user_id,
+             update_id: update.id
+           }) do
+      IO.inspect(%{backup: backup, upload_token: token, update: update, files: files})
 
       conn
       |> put_view(RedstoneServerWeb.Json.UploadView)
       |> render("show.json", %{backup: backup, upload_token: token, update: update, files: files})
-
-      # |> render("show.json", %{backup: backup, upload_token: token, update: update, files: files})
     else
       %{valid?: false} = changeset -> _render_changeset_error(conn, changeset)
       {:error, changeset} -> _render_changeset_error(conn, changeset)
