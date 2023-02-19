@@ -119,13 +119,14 @@ defmodule RedstoneServer.Backup do
     query =
       RedstoneServer.Backup.FileUpdate
       |> where([fu], fu.update_id == ^update_id)
-      |> select([fu], fu.file_id)
+      |> join(:inner, [fu], f in assoc(fu, :file))
+      |> select([_, file], file)
+      |> select_merge([fu], %{last_update: fu})
 
     Enum.reduce(opts, query, fn
       {:operations, operations}, query -> where(query, [fu], fu.operation in ^operations)
       _, query -> query
     end)
-    |> _build_files_changed_query()
     |> Repo.all()
   end
 
@@ -380,7 +381,12 @@ defmodule RedstoneServer.Backup do
         from(f in File, where: f.path == ^file_path and f.backup_id == ^update.backup_id)
         |> Repo.one!()
 
-      File.changeset(db_file, file)
+      File.changeset(
+        db_file,
+        %{
+          "sha256_checksum" => file["sha_256_digest"]
+        }
+      )
     end)
   end
 
@@ -400,7 +406,7 @@ defmodule RedstoneServer.Backup do
     end)
   end
 
-  defp _build_files_changed_query(files_changed_subquery, opts \\ []) do
+  defp _build_files_changed_query(files_changed_subquery, opts) do
     query =
       RedstoneServer.Backup.FileUpdate
       |> join(:left, [fu1], fu2 in RedstoneServer.Backup.FileUpdate,
