@@ -21,7 +21,7 @@ defmodule RedstoneServer.Backup.File do
   end
 
   @doc false
-  def insert_changeset(file, attrs) do
+  def changeset(file, attrs) do
     file
     |> cast(attrs, [:path, :sha256_checksum, :backup_id])
     |> validate_required([:path, :sha256_checksum])

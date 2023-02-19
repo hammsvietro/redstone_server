@@ -39,11 +39,16 @@ defmodule RedstoneServerWeb.Router do
     delete "/log_out", UserAuth, :logout
 
     scope "/upload" do
-      post "/declare", Upload, :declare
+      post "/declare", Upload, :declare_backup
+      post "/push", Upload, :push
     end
 
     scope "/download" do
       post "/clone", Download, :clone
+    end
+
+    scope "/update" do
+      get "/fetch/:backup_id", Update, :fetch
     end
   end
 

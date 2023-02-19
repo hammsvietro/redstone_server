@@ -40,11 +40,9 @@ defmodule RedstoneServerWeb.Tcp.Controller do
          %Update{} = update <-
            RedstoneServer.Backup.get_update_by_upload_token(payload["upload_token"]),
          files <-
-           RedstoneServer.Backup.get_files_changed_in_update(update.id,
-             operations: [:add, :update]
-           ) do
+           RedstoneServer.Backup.get_files_changed_in_update(update.id) do
       {:ok, _} = RedstoneServer.Backup.update_update_status(update, :completed)
-      Filesystem.move_files_to_definitive_folder(backup.name, files)
+      Filesystem.apply_update_to_backup_folder(backup.name, files)
       RedstoneServer.Backup.delete_upload_token(payload["upload_token"])
       :ok
     else
@@ -64,17 +62,21 @@ defmodule RedstoneServerWeb.Tcp.Controller do
          %Backup{} = backup <-
            RedstoneServer.Backup.get_backup_by_upload_token(payload["upload_token"]),
          %RedstoneServer.Backup.File{} = file <-
-           RedstoneServer.Backup.get_file(payload["file_id"], backup.id),
-         true <-
-           Filesystem.verify_checksum(
+           RedstoneServer.Backup.get_file(payload["file_id"], backup.id) do
+      case Filesystem.verify_checksum(
              file.sha256_checksum,
              Filesystem.get_temporary_file_path(backup.name, file.path)
            ) do
+        true ->
+          :ok
+
+        false ->
+          Filesystem.remove_file(backup.name, file.path)
+          {:error, "Checksum error"}
+      end
+
       :ok
     else
-      false ->
-        {:error, "Checksum error"}
-
       %{valid?: false} = changeset ->
         {:error, RedstoneServerWeb.ErrorHelpers.changeset_error_to_string(changeset)}
 
