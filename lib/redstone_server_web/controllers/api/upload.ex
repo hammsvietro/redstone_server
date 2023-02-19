@@ -52,8 +52,6 @@ defmodule RedstoneServerWeb.Api.Upload do
              user_id: user_id,
              update_id: update.id
            }) do
-      IO.inspect(%{backup: backup, upload_token: token, update: update, files: files})
-
       conn
       |> put_view(RedstoneServerWeb.Json.UploadView)
       |> render("show.json", %{backup: backup, upload_token: token, update: update, files: files})

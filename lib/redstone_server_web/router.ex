@@ -46,6 +46,10 @@ defmodule RedstoneServerWeb.Router do
     scope "/download" do
       post "/clone", Download, :clone
     end
+
+    scope "/update" do
+      get "/fetch/:backup_id", Update, :fetch
+    end
   end
 
   scope "/", RedstoneServerWeb.Html do

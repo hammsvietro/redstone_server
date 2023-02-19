@@ -89,6 +89,15 @@ defmodule RedstoneServer.Backup do
     |> Repo.one()
   end
 
+  def get_latest_update(backup_id) do
+    from(u in Update,
+      where: u.backup_id == ^backup_id and u.transaction_status == :completed,
+      order_by: [desc: u.inserted_at],
+      limit: 1
+    )
+    |> Repo.one()
+  end
+
   @spec get_file(binary(), binary()) :: RedstoneServer.Backup.File.__struct__()
   def get_file(file_id, backup_id) do
     from(f in RedstoneServer.Backup.File, where: f.id == ^file_id and f.backup_id == ^backup_id)
