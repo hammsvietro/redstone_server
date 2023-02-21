@@ -23,7 +23,7 @@ defmodule RedstoneServer.Filesystem do
   def remove_file(backup_name, file_path) do
     backup_name
     |> get_backup_entrypoint()
-    |> Path.join()
+    |> Path.join(file_path)
     |> File.rm!()
   end
 
