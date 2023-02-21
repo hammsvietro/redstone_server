@@ -111,7 +111,10 @@ defmodule RedstoneServer.Backup do
       |> group_by([fu], fu.file_id)
       |> select([fu], fu.file_id)
 
-    _build_files_changed_query(changed_file_ids_subquery, with_transaction_status: :completed)
+    _build_files_changed_query(changed_file_ids_subquery,
+      with_transaction_status: :completed,
+      only_operations: [:add, :update]
+    )
     |> Repo.all()
   end
 
@@ -423,6 +426,9 @@ defmodule RedstoneServer.Backup do
       |> select_merge([f1], %{last_update: f1})
 
     Enum.reduce(opts, query, fn
+      {:only_operations, operations}, query ->
+        where(query, [fu, _, _, _], fu.operation in ^operations)
+
       {:with_transaction_status, status}, query ->
         where(query, [_, _, _, update], update.transaction_status == ^status)
 

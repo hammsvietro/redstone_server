@@ -3,14 +3,14 @@ defmodule RedstoneServerWeb.Json.DownloadView do
         backup: backup,
         download_token: token,
         update: update,
-        files_to_download: files,
+        files: files,
         total_bytes: total_bytes
       }) do
     %{
       backup: backup,
       download_token: token,
       update: update,
-      files_to_download: files,
+      files: files,
       total_bytes: total_bytes
     }
   end
