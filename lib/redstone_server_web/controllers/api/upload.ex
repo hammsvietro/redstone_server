@@ -73,11 +73,4 @@ defmodule RedstoneServerWeb.Api.Upload do
     |> put_view(RedstoneServerWeb.ErrorView)
     |> render("error.json", changeset: changeset)
   end
-
-  defp _render_not_found_error(conn, entity, name) do
-    conn
-    |> put_status(400)
-    |> put_view(RedstoneServerWeb.ErrorView)
-    |> render("404.json", entity: entity, name: name)
-  end
 end

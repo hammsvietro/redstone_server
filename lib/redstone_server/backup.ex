@@ -10,6 +10,8 @@ defmodule RedstoneServer.Backup do
   alias RedstoneServer.Filesystem
   alias RedstoneServer.Backup.{Backup, File, Update, UploadToken, DownloadToken, FileUpdate}
 
+  @two_minutes 120_000
+
   def create_backup(name, user_id, files) do
     entrypoint = Filesystem.get_temporary_backup_entrypoint(name)
 
@@ -17,7 +19,7 @@ defmodule RedstoneServer.Backup do
       Multi.new()
       |> _create_backup_multi(name, user_id, entrypoint)
       |> _store_file_tree(files)
-      |> Repo.transaction()
+      |> Repo.transaction(timeout: @two_minutes)
 
     case transaction do
       {:ok, schemas} -> {:ok, schemas}
