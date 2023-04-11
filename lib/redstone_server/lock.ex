@@ -10,8 +10,13 @@ defmodule RedstoneServer.Lock do
 
   # Server
   @impl true
-  def init(%{backup_name: name, kind: lock_kind}) do
-    {:ok, %{backup_name: name, kind: lock_kind, users: 1}}
+  def init(%{backup_name: name, kind: :read}) do
+    {:ok, %{backup_name: name, kind: :read, users: 1}}
+  end
+
+  @impl true
+  def init(%{backup_name: name, kind: :write}) do
+    {:ok, %{backup_name: name, kind: :write, users: 1}}
   end
 
   @impl true
@@ -20,14 +25,13 @@ defmodule RedstoneServer.Lock do
   end
 
   @impl true
-  def handle_cast(:remove_user, %{kind: :read} = state) do
-    users = state.users - 1
+  def handle_call(:remove_user, _from, %{users: 1}) do
+    {:stop, :normal, nil}
+  end
 
-    if users == 0 do
-      GenServer.stop(self())
-    end
-
-    {:noreply, %{state | users: users}}
+  @impl true
+  def handle_call(:remove_user, _from, %{kind: :read} = state) do
+    {:reply, :ok, %{state | users: state.users - 1}}
   end
 
   @impl true
@@ -37,10 +41,11 @@ defmodule RedstoneServer.Lock do
 
   # Client
 
-  def start_link(%{backup_name: name} = state) do
-    GenServer.start_link(__MODULE__, state, name: get_gen_server_name(name))
-  end
+  @doc """
+  Acquire a lock for a backup.
 
+  Before interacting with backup data, this lock must be used.
+  """
   def acquire_lock(%{backup_name: name, kind: _kind} = state) do
     case name |> get_gen_server_name() |> Process.whereis() do
       nil -> create_lock(state)
@@ -48,20 +53,29 @@ defmodule RedstoneServer.Lock do
     end
   end
 
+  @doc """
+  Release an existing lock 
+
+  After interacting with backup data, this must be used.
+  """
   def release_lock(pid) do
-    GenServer.call(pid, :remove_user)
+    try do
+      GenServer.call(pid, :remove_user)
+    catch
+      :exit, {:normal, _} -> :ok
+    end
   end
 
-  def create_lock(%{backup_name: name} = state) do
-    {:ok, _pid} = res = GenServer.start_link(__MODULE__, state, name: get_gen_server_name(name))
-    res
+  defp create_lock(%{backup_name: name} = state) do
+    GenServer.start_link(__MODULE__, state, name: get_gen_server_name(name))
   end
 
   defp handle_existing_lock(pid, state) do
     lock = GenServer.call(pid, :get)
 
     if :write in [lock.kind, state.kind] do
-      {:error, "Can't acquire #{state.lock} lock, #{state.backup_name} has a #{lock.kind} lock"}
+      {:error,
+       "Can't acquire #{state.kind} lock, \"#{state.backup_name}\" is already locked with a #{lock.kind} lock"}
     else
       GenServer.cast(pid, :add_user)
       {:ok, pid}

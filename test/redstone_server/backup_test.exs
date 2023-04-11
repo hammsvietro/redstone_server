@@ -46,4 +46,34 @@ defmodule RedstoneServer.BackupTest do
       assert_raise Ecto.NoResultsError, fn -> Backup.get_download_token!(download_token.id) end
     end
   end
+
+  describe "backup_lock" do
+    alias RedstoneServer.Lock
+
+    test "acquire_lock/1 can be used multiple times for :read locks" do
+      assert {:ok, _pid} = Lock.acquire_lock(%{backup_name: "leprous_discography", kind: :read})
+      assert {:ok, _pid} = Lock.acquire_lock(%{backup_name: "leprous_discography", kind: :read})
+      assert {:ok, pid} = Lock.acquire_lock(%{backup_name: "leprous_discography", kind: :read})
+
+      assert %{users: 3} = GenServer.call(pid, :get)
+      assert :ok = Lock.release_lock(pid)
+      assert :ok = Lock.release_lock(pid)
+      assert %{users: 1} = GenServer.call(pid, :get)
+      assert :ok = Lock.release_lock(pid)
+      assert !Process.alive?(pid)
+    end
+
+    test "acquire_lock/1 with a :write lock returns an error when there's a read lock and vice-versa" do
+      assert {:ok, pid} = Lock.acquire_lock(%{backup_name: "leprous_discography", kind: :read})
+      assert {:error, _} = Lock.acquire_lock(%{backup_name: "leprous_discography", kind: :write})
+
+      assert :ok = Lock.release_lock(pid)
+      assert {:ok, pid} = Lock.acquire_lock(%{backup_name: "leprous_discography", kind: :write})
+      assert {:error, _} = Lock.acquire_lock(%{backup_name: "leprous_discography", kind: :read})
+
+      assert :ok = Lock.release_lock(pid)
+    end
+
+    # test "acquire_lock/1"
+  end
 end
