@@ -9,34 +9,58 @@ defmodule RedstoneServer.Lock do
   use GenServer
 
   # Server
-  @impl true
-  def init(%{backup_name: name, kind: :read}) do
-    {:ok, %{backup_name: name, kind: :read, users: 1}}
+
+  def start_link(_) do
+    GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
   @impl true
-  def init(%{backup_name: name, kind: :write}) do
-    {:ok, %{backup_name: name, kind: :write, users: 1}}
+  def init(_) do
+    {:ok, %{}}
   end
 
   @impl true
-  def handle_cast(:add_user, %{kind: :read} = state) do
-    {:noreply, %{state | users: state.users + 1}}
+  def handle_call({:lock, backup_name, :write}, _from, state) do
+    case Map.get(state, backup_name) do
+      nil ->
+        {:reply, :ok, Map.put(state, backup_name, %{kind: :write, users: 1})}
+
+      lock ->
+        {:reply, lock_conflict_error(backup_name, lock.kind, :write), state}
+    end
   end
 
   @impl true
-  def handle_call(:remove_user, _from, %{users: 1}) do
-    {:stop, :normal, nil}
+  def handle_call({:lock, backup_name, :read}, _from, state) do
+    case Map.get(state, backup_name) do
+      %{kind: :write} ->
+        {:reply, lock_conflict_error(backup_name, :write, :read), state}
+
+      nil ->
+        {:reply, :ok, Map.put(state, backup_name, %{kind: :read, users: 1})}
+
+      lock ->
+        {:reply, :ok, Map.put(state, backup_name, %{kind: :read, users: lock.users + 1})}
+    end
   end
 
   @impl true
-  def handle_call(:remove_user, _from, %{kind: :read} = state) do
-    {:reply, :ok, %{state | users: state.users - 1}}
+  def handle_call({:unlock, backup_name}, _from, state) do
+    case Map.get(state, backup_name) do
+      nil ->
+        {:reply, {:error, "Backup isn't locked"}, state}
+
+      lock when lock.users > 1 ->
+        {:reply, :ok, Map.put(state, backup_name, %{kind: :read, users: lock.users - 1})}
+
+      _ ->
+        {:reply, :ok, Map.delete(state, backup_name)}
+    end
   end
 
   @impl true
-  def handle_call(:get, _from, state) do
-    {:reply, state, state}
+  def handle_call({:get, backup_name}, _from, state) do
+    {:reply, Map.get(state, backup_name), state}
   end
 
   # Client
@@ -46,11 +70,8 @@ defmodule RedstoneServer.Lock do
 
   Before interacting with backup data, this lock must be used.
   """
-  def acquire_lock(%{backup_name: name, kind: _kind} = state) do
-    case name |> get_gen_server_name() |> Process.whereis() do
-      nil -> create_lock(state)
-      pid when is_pid(pid) -> handle_existing_lock(pid, state)
-    end
+  def lock(%{backup_name: backup_name, kind: lock_kind}) do
+    GenServer.call(__MODULE__, {:lock, backup_name, lock_kind})
   end
 
   @doc """
@@ -58,29 +79,18 @@ defmodule RedstoneServer.Lock do
 
   After interacting with backup data, this must be used.
   """
-  def release_lock(pid) do
-    try do
-      GenServer.call(pid, :remove_user)
-    catch
-      :exit, {:normal, _} -> :ok
-    end
+  def unlock(backup_name) do
+    GenServer.call(__MODULE__, {:unlock, backup_name})
   end
 
-  defp create_lock(%{backup_name: name} = state) do
-    GenServer.start_link(__MODULE__, state, name: get_gen_server_name(name))
-  end
+  def has_read_lock(backup_name),
+    do: match?(%{kind: :read}, GenServer.call(__MODULE__, {:get, backup_name}))
 
-  defp handle_existing_lock(pid, state) do
-    lock = GenServer.call(pid, :get)
+  def has_write_lock(backup_name),
+    do: match?(%{kind: :write}, GenServer.call(__MODULE__, {:get, backup_name}))
 
-    if :write in [lock.kind, state.kind] do
+  defp lock_conflict_error(backup_name, existing_lock, lock),
+    do:
       {:error,
-       "Can't acquire #{state.kind} lock, \"#{state.backup_name}\" is already locked with a #{lock.kind} lock"}
-    else
-      GenServer.cast(pid, :add_user)
-      {:ok, pid}
-    end
-  end
-
-  defp get_gen_server_name(backup_name), do: :"#{__MODULE__}.#{backup_name}"
+       "Can't acquire #{lock} lock, \"#{backup_name}\" is already locked with a #{existing_lock} lock"}
 end

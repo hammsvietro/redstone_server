@@ -50,30 +50,37 @@ defmodule RedstoneServer.BackupTest do
   describe "backup_lock" do
     alias RedstoneServer.Lock
 
-    test "acquire_lock/1 can be used multiple times for :read locks" do
-      assert {:ok, _pid} = Lock.acquire_lock(%{backup_name: "leprous_discography", kind: :read})
-      assert {:ok, _pid} = Lock.acquire_lock(%{backup_name: "leprous_discography", kind: :read})
-      assert {:ok, pid} = Lock.acquire_lock(%{backup_name: "leprous_discography", kind: :read})
+    test "lock/1 can be used multiple times for :read locks" do
+      Lock.start_link(%{})
+      assert :ok = Lock.lock(%{backup_name: "leprous_discography", kind: :read})
+      assert :ok = Lock.lock(%{backup_name: "leprous_discography", kind: :read})
+      assert :ok = Lock.lock(%{backup_name: "leprous_discography", kind: :read})
 
-      assert %{users: 3} = GenServer.call(pid, :get)
-      assert :ok = Lock.release_lock(pid)
-      assert :ok = Lock.release_lock(pid)
-      assert %{users: 1} = GenServer.call(pid, :get)
-      assert :ok = Lock.release_lock(pid)
-      assert !Process.alive?(pid)
+      assert %{users: 3} = GenServer.call(Lock, {:get, "leprous_discography"})
+      assert :ok = Lock.unlock("leprous_discography")
+      assert :ok = Lock.unlock("leprous_discography")
+      assert %{users: 1} = GenServer.call(Lock, {:get, "leprous_discography"})
+      assert :ok = Lock.unlock("leprous_discography")
+      assert is_nil(GenServer.call(Lock, {:get, "leprous_discography"}))
+      assert {:error, _} = Lock.unlock("leprous_discography")
     end
 
-    test "acquire_lock/1 with a :write lock returns an error when there's a read lock and vice-versa" do
-      assert {:ok, pid} = Lock.acquire_lock(%{backup_name: "leprous_discography", kind: :read})
-      assert {:error, _} = Lock.acquire_lock(%{backup_name: "leprous_discography", kind: :write})
+    test "lock/1 with a :write lock returns an error when there's a read lock and vice-versa" do
+      Lock.start_link(%{})
+      assert :ok = Lock.lock(%{backup_name: "leprous_discography", kind: :read})
+      assert {:error, _} = Lock.lock(%{backup_name: "leprous_discography", kind: :write})
+      assert :ok = Lock.unlock("leprous_discography")
 
-      assert :ok = Lock.release_lock(pid)
-      assert {:ok, pid} = Lock.acquire_lock(%{backup_name: "leprous_discography", kind: :write})
-      assert {:error, _} = Lock.acquire_lock(%{backup_name: "leprous_discography", kind: :read})
-
-      assert :ok = Lock.release_lock(pid)
+      assert :ok = Lock.lock(%{backup_name: "leprous_discography", kind: :write})
+      assert {:error, _} = Lock.lock(%{backup_name: "leprous_discography", kind: :read})
+      assert :ok = Lock.unlock("leprous_discography")
     end
 
-    # test "acquire_lock/1"
+    test "lock/1 with a :write lock returns an error if the backup already has a write lock" do
+      Lock.start_link(%{})
+      assert :ok = Lock.lock(%{backup_name: "leprous_discography", kind: :write})
+      assert {:error, _} = Lock.lock(%{backup_name: "leprous_discography", kind: :write})
+      assert :ok = Lock.unlock("leprous_discography")
+    end
   end
 end
