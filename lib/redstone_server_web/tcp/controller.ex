@@ -13,6 +13,7 @@ defmodule RedstoneServerWeb.Tcp.Controller do
     with %{valid?: true} <- Schemas.validate_upload_chunk_message(payload),
          %Backup{} = backup <-
            RedstoneServer.Backup.get_backup_by_upload_token(payload["upload_token"]),
+         {_, true} <- {:has_write_lock, RedstoneServer.Lock.has_write_lock(backup.name)},
          %RSFile{} = file <- RedstoneServer.Backup.get_file(payload["file_id"], backup.id) do
       temporary_path = Filesystem.get_temporary_file_path(backup.name, file.path)
 
@@ -22,14 +23,7 @@ defmodule RedstoneServerWeb.Tcp.Controller do
       Filesystem.write_data(temporary_path, file_chunk)
       :ok
     else
-      %{valid?: false} = changeset ->
-        {:error, RedstoneServerWeb.ErrorHelpers.changeset_error_to_string(changeset)}
-
-      {:error, _} = error ->
-        error
-
-      error ->
-        {:error, error}
+      error -> handle_upload_error(error, payload)
     end
   end
 
@@ -37,23 +31,18 @@ defmodule RedstoneServerWeb.Tcp.Controller do
     with %{valid?: true} <- Schemas.validate_commit_message(payload),
          %Backup{} = backup <-
            RedstoneServer.Backup.get_backup_by_upload_token(payload["upload_token"]),
+         {_, true} <- {:has_write_lock, RedstoneServer.Lock.has_write_lock(backup.name)},
          %Update{} = update <-
            RedstoneServer.Backup.get_update_by_upload_token(payload["upload_token"]),
          files <-
            RedstoneServer.Backup.get_files_changed_in_update(update.id) do
       {:ok, _} = RedstoneServer.Backup.update_update_status(update, :completed)
       Filesystem.apply_update_to_backup_folder(backup.name, files)
+      RedstoneServer.Lock.unlock(backup.name)
       RedstoneServer.Backup.delete_upload_token(payload["upload_token"])
       :ok
     else
-      %{valid?: false} = changeset ->
-        {:error, RedstoneServerWeb.ErrorHelpers.changeset_error_to_string(changeset)}
-
-      {:error, _} = error ->
-        error
-
-      error ->
-        {:error, error}
+      error -> handle_upload_error(error, payload)
     end
   end
 
@@ -61,30 +50,18 @@ defmodule RedstoneServerWeb.Tcp.Controller do
     with %{valid?: true} <- Schemas.validate_check_file_message(payload),
          %Backup{} = backup <-
            RedstoneServer.Backup.get_backup_by_upload_token(payload["upload_token"]),
+         {_, true} <- {:has_write_lock, RedstoneServer.Lock.has_write_lock(backup.name)},
          %RedstoneServer.Backup.File{} = file <-
            RedstoneServer.Backup.get_file(payload["file_id"], backup.id) do
       case Filesystem.verify_checksum(
              file.sha256_checksum,
              Filesystem.get_temporary_file_path(backup.name, file.path)
            ) do
-        true ->
-          :ok
-
-        false ->
-          Filesystem.remove_file(backup.name, file.path)
-          {:error, "Checksum error"}
+        true -> :ok
+        false -> :retry
       end
-
-      :ok
     else
-      %{valid?: false} = changeset ->
-        {:error, RedstoneServerWeb.ErrorHelpers.changeset_error_to_string(changeset)}
-
-      {:error, _} = error ->
-        error
-
-      error ->
-        error
+      error -> handle_upload_error(error, payload)
     end
   end
 
@@ -92,6 +69,7 @@ defmodule RedstoneServerWeb.Tcp.Controller do
     with %{valid?: true} <- Schemas.validate_download_chunk_message(payload),
          %Backup{} = backup <-
            RedstoneServer.Backup.get_backup_by_download_token(payload["download_token"]),
+         {_, true} <- {:has_read_lock, RedstoneServer.Lock.has_read_lock(backup.name)},
          %RSFile{} = file <- RedstoneServer.Backup.get_file(payload["file_id"], backup.id) do
       path = Filesystem.get_file_path(backup.name, file.path)
       byte_limit = payload["byte_limit"]
@@ -105,15 +83,48 @@ defmodule RedstoneServerWeb.Tcp.Controller do
         {:ok, data} -> {:ok, data}
         error -> error
       end
+    else
+      {:has_read_lock, false} ->
+        RedstoneServer.Backup.delete_download_token(payload["download_token"])
+        {:error, "No backup write lock found."}
     end
   end
 
   def process(%{"operation" => "finish_download"} = payload) do
+    %Backup{name: backup_name} =
+      RedstoneServer.Backup.get_backup_by_download_token(payload["download_token"])
+
+    RedstoneServer.Lock.unlock(backup_name)
+
     RedstoneServer.Backup.delete_download_token(payload["download_token"])
     :ok
   end
 
-  def process(%{"operation" => "abort"} = _payload) do
-    # TODO: implement it
+  defp handle_upload_error(error, payload) do
+    error_message =
+      case error do
+        {:has_write_lock, false} ->
+          "No backup write lock found."
+
+        %{valid?: false} = changeset ->
+          RedstoneServerWeb.ErrorHelpers.changeset_error_to_string(changeset)
+
+        {:error, error_message} ->
+          error_message
+
+        error when is_binary(error) ->
+          error
+      end
+
+    abort_upload(payload["upload_token"], error_message)
+    {:error, error_message}
+  end
+
+  defp abort_upload(upload_token, error) do
+    %Backup{name: backup_name} = RedstoneServer.Backup.get_backup_by_upload_token(upload_token)
+    RedstoneServer.Lock.unlock(backup_name)
+    %Update{} = update = RedstoneServer.Backup.get_update_by_upload_token(upload_token)
+    RedstoneServer.Backup.fail_update(update, error)
+    Filesystem.remove_temporary_files(backup_name)
   end
 end

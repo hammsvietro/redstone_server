@@ -47,6 +47,10 @@ defmodule RedstoneServer.Filesystem do
   def apply_update_to_backup_folder(backup_name, files) do
     Enum.each(files, &_handle_file_move(&1, backup_name))
 
+    remove_temporary_files(backup_name)
+  end
+
+  def remove_temporary_files(backup_name) do
     backup_name
     |> get_temporary_backup_entrypoint()
     |> File.rm_rf!()

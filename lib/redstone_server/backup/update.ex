@@ -33,4 +33,8 @@ defmodule RedstoneServer.Backup.Update do
   def update_status_changeset(%__schema__{} = update, status) do
     change(update, transaction_status: status)
   end
+
+  def fail_changeset(%__schema__{} = update, error) do
+    change(update, transaction_status: :failed, error_message: error)
+  end
 end

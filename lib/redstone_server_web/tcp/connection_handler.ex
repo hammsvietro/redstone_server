@@ -44,6 +44,7 @@ defmodule RedstoneServerWeb.Tcp.ConnectionHandler do
     case response do
       {:error, error} -> %{status: "error", reason: error}
       {:ok, data} -> %{status: "ok", data: data}
+      :retry -> %{status: "ok", retry: true}
       :ok -> %{status: "ok"}
     end
   end
