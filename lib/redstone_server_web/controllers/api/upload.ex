@@ -17,6 +17,7 @@ defmodule RedstoneServerWeb.Api.Upload do
          {:ok, %{backup: %{id: backup_id}, update: update}} <-
            RedstoneServer.Backup.create_backup(name, user_id, files) do
       backup = RedstoneServer.Backup.get_backup(backup_id)
+      RedstoneServer.Lock.lock(%{backup_name: backup.name, kind: :write})
 
       files = RedstoneServer.Backup.get_files_changed_in_update(update.id)
 
@@ -36,16 +37,13 @@ defmodule RedstoneServerWeb.Api.Upload do
     end
   end
 
-  def push(conn, params) do
+  def push(conn, %{"backup_id" => backup_id, "files" => files}) do
     user_id = conn.assigns.current_user.id
+    %RedstoneServer.Backup.Backup{} = backup = RedstoneServer.Backup.get_backup(backup_id)
 
-    with %{
-           valid?: true,
-           changes: %{backup_id: backup_id, files: files}
-         } <- UploadValidators.validate_push(params),
-         %RedstoneServer.Backup.Backup{} = backup <- RedstoneServer.Backup.get_backup(backup_id),
-         {:ok, %{update: update}} <- RedstoneServer.Backup.update_files(backup, files, user_id),
+    with {:ok, %{update: update}} <- RedstoneServer.Backup.update_files(backup, files, user_id),
          files <- RedstoneServer.Backup.get_files_changed_in_update(update.id),
+         :ok <- RedstoneServer.Lock.lock(%{backup_name: backup.name, kind: :write}),
          {:ok, %UploadToken{token: token}} <-
            RedstoneServer.Backup.create_upload_token(%{
              backup_id: backup.id,
@@ -54,10 +52,29 @@ defmodule RedstoneServerWeb.Api.Upload do
            }) do
       conn
       |> put_view(RedstoneServerWeb.Json.UploadView)
-      |> render("show.json", %{backup: backup, upload_token: token, update: update, files: files})
+      |> render("show.json", %{
+        backup: backup,
+        upload_token: token,
+        update: update,
+        files: files
+      })
     else
-      %{valid?: false} = changeset -> _render_changeset_error(conn, changeset)
-      {:error, changeset} -> _render_changeset_error(conn, changeset)
+      error ->
+        RedstoneServer.Lock.unlock(backup.name)
+
+        case error do
+          %{valid?: false} = changeset ->
+            _render_changeset_error(conn, changeset)
+
+          {:error, %Ecto.Changeset{} = changeset} ->
+            _render_changeset_error(conn, changeset)
+
+          {:error, reason} ->
+            conn
+            |> put_status(400)
+            |> put_view(RedstoneServerWeb.ErrorView)
+            |> render("error.json", %{reason: reason})
+        end
     end
   end
 

@@ -92,5 +92,5 @@ defmodule RedstoneServer.Lock do
   defp lock_conflict_error(backup_name, existing_lock, lock),
     do:
       {:error,
-       "Can't acquire #{lock} lock, \"#{backup_name}\" is already locked with a #{existing_lock} lock"}
+       "Can't acquire #{lock} lock, \"#{backup_name}\" is already locked with a #{existing_lock} lock, try again later."}
 end
