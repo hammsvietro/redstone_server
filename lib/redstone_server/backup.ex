@@ -163,6 +163,12 @@ defmodule RedstoneServer.Backup do
     |> Repo.update()
   end
 
+  def fail_update(%Update{} = update, error_message) do
+    update
+    |> RedstoneServer.Backup.Update.fail_changeset(error_message)
+    |> Repo.update()
+  end
+
   @doc """
   Gets a single upload_token.
 

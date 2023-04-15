@@ -19,7 +19,9 @@ defmodule RedstoneServer.Application do
       # Start the Tcp server
       {RedstoneServerWeb.Tcp.Server, 8000},
       # Start dynamic supervisor for handling tcp connection
-      {DynamicSupervisor, strategy: :one_for_one, name: RedstoneServer.TcpConnectionSupervisor}
+      {DynamicSupervisor, strategy: :one_for_one, name: RedstoneServer.TcpConnectionSupervisor},
+      # Start the backup lock
+      RedstoneServer.Lock
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

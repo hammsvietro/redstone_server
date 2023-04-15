@@ -46,4 +46,41 @@ defmodule RedstoneServer.BackupTest do
       assert_raise Ecto.NoResultsError, fn -> Backup.get_download_token!(download_token.id) end
     end
   end
+
+  describe "backup_lock" do
+    alias RedstoneServer.Lock
+
+    test "lock/1 can be used multiple times for :read locks" do
+      Lock.start_link(%{})
+      assert :ok = Lock.lock(%{backup_name: "leprous_discography", kind: :read})
+      assert :ok = Lock.lock(%{backup_name: "leprous_discography", kind: :read})
+      assert :ok = Lock.lock(%{backup_name: "leprous_discography", kind: :read})
+
+      assert %{users: 3} = GenServer.call(Lock, {:get, "leprous_discography"})
+      assert :ok = Lock.unlock("leprous_discography")
+      assert :ok = Lock.unlock("leprous_discography")
+      assert %{users: 1} = GenServer.call(Lock, {:get, "leprous_discography"})
+      assert :ok = Lock.unlock("leprous_discography")
+      assert is_nil(GenServer.call(Lock, {:get, "leprous_discography"}))
+      assert {:error, _} = Lock.unlock("leprous_discography")
+    end
+
+    test "lock/1 with a :write lock returns an error when there's a read lock and vice-versa" do
+      Lock.start_link(%{})
+      assert :ok = Lock.lock(%{backup_name: "leprous_discography", kind: :read})
+      assert {:error, _} = Lock.lock(%{backup_name: "leprous_discography", kind: :write})
+      assert :ok = Lock.unlock("leprous_discography")
+
+      assert :ok = Lock.lock(%{backup_name: "leprous_discography", kind: :write})
+      assert {:error, _} = Lock.lock(%{backup_name: "leprous_discography", kind: :read})
+      assert :ok = Lock.unlock("leprous_discography")
+    end
+
+    test "lock/1 with a :write lock returns an error if the backup already has a write lock" do
+      Lock.start_link(%{})
+      assert :ok = Lock.lock(%{backup_name: "leprous_discography", kind: :write})
+      assert {:error, _} = Lock.lock(%{backup_name: "leprous_discography", kind: :write})
+      assert :ok = Lock.unlock("leprous_discography")
+    end
+  end
 end
