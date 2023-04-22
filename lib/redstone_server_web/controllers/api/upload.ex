@@ -5,6 +5,7 @@ defmodule RedstoneServerWeb.Api.Upload do
 
   use RedstoneServerWeb, :controller
   alias RedstoneServer.Backup.UploadToken
+  alias RedstoneServerWeb.Utils
   alias RedstoneServerWeb.Api.Schemas.Upload, as: UploadValidators
 
   def declare_backup(conn, params) do
@@ -30,7 +31,15 @@ defmodule RedstoneServerWeb.Api.Upload do
 
       conn
       |> put_view(RedstoneServerWeb.Json.UploadView)
-      |> render("show.json", %{backup: backup, upload_token: token, update: update, files: files})
+      |> render(
+        "show.json",
+        Utils.to_json(%{
+          backup: backup,
+          upload_token: token,
+          update: update,
+          files: files
+        })
+      )
     else
       %{valid?: false} = changeset -> _render_changeset_error(conn, changeset)
       {:error, changeset} -> _render_changeset_error(conn, changeset)
@@ -52,12 +61,15 @@ defmodule RedstoneServerWeb.Api.Upload do
            }) do
       conn
       |> put_view(RedstoneServerWeb.Json.UploadView)
-      |> render("show.json", %{
-        backup: backup,
-        upload_token: token,
-        update: update,
-        files: files
-      })
+      |> render(
+        "show.json",
+        Utils.to_json(%{
+          backup: backup,
+          upload_token: token,
+          update: update,
+          files: files
+        })
+      )
     else
       error ->
         RedstoneServer.Lock.unlock(backup.name)

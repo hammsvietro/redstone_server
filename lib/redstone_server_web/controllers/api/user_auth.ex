@@ -32,7 +32,8 @@ defmodule RedstoneServerWeb.Api.UserAuth do
       changeset ->
         conn
         |> put_status(:unprocessable_entity)
-        |> render(RedstoneServerWeb.ErrorView, "error.json", changeset: changeset)
+        |> put_view(RedstoneServerWeb.ErrorView)
+        |> render("error.json", changeset: changeset)
     end
   end
 

@@ -4,11 +4,13 @@ defmodule RedstoneServerWeb.Api.Update do
   """
   use RedstoneServerWeb, :controller
 
+  alias RedstoneServerWeb.Utils
+
   def fetch(conn, %{"backup_id" => backup_id}) do
     latest_update = RedstoneServer.Backup.get_latest_update(backup_id)
 
     conn
     |> put_view(RedstoneServerWeb.Json.UpdateView)
-    |> render("show.json", %{latest_update: latest_update})
+    |> render("show.json", Utils.to_json(%{latest_update: latest_update}))
   end
 end

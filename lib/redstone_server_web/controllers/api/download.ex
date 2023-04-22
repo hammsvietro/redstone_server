@@ -7,6 +7,7 @@ defmodule RedstoneServerWeb.Api.Download do
 
   alias RedstoneServer.Backup.{Backup, Update, DownloadToken}
   alias RedstoneServer.Filesystem, as: FS
+  alias RedstoneServerWeb.Utils
 
   def clone(conn, params) do
     # TODO: create schema
@@ -30,13 +31,13 @@ defmodule RedstoneServerWeb.Api.Download do
       |> put_view(RedstoneServerWeb.Json.DownloadView)
       |> render(
         "show.json",
-        %{
+        Utils.to_json(%{
           backup: backup,
           update: update,
           download_token: token,
           files: files,
           total_bytes: total_bytes
-        }
+        })
       )
     else
       error ->
@@ -82,13 +83,13 @@ defmodule RedstoneServerWeb.Api.Download do
       |> put_view(RedstoneServerWeb.Json.DownloadView)
       |> render(
         "show.json",
-        %{
+        Utils.to_json(%{
           backup: backup,
           update: latest_update,
           download_token: token,
           files: files,
           total_bytes: total_bytes
-        }
+        })
       )
     else
       error ->
