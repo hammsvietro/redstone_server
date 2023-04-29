@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+  redstone:
+    build: .
+    volumes:
+      - ~/redstone-data:/app/priv/backups
+    environment:
+      - DATABASE_URL=ecto://${db_user}:${db_password}@db/${db_name}
+      - SECRET_KEY_BASE=${main_app_secret}
+      - db_user=${db_user}
+      - db_host=db
+    ports:
+      - 4000:4000
+      - 8000:8000
+    networks:
+      - appnetwork
+    depends_on:
+      - db
+
+  db:
+    image: postgres:latest
+    volumes:
+      - ~/redstone-db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=${db_password}
+      - POSTGRES_DB=${db_name}
+      - POSTGRES_USER=${db_user}
+
+    networks:
+      - appnetwork
+
+networks:
+  appnetwork:
