@@ -103,7 +103,12 @@ defmodule RedstoneServer.Filesystem do
       |> Path.join(file.path)
 
     :ok = create_folders_if_needed(definitive_path)
-    :ok = File.rename(temporary_path, definitive_path)
+
+    # simply moving the file results in exdev error when using a mapped volume in docker
+    # there might be a better solution to this
+
+    :ok = File.cp(temporary_path, definitive_path)
+    :ok = File.rm(temporary_path)
   end
 
   defp _handle_file_move(
