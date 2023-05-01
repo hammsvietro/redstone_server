@@ -1,8 +1,8 @@
-version: "3.8"
+version: "3.3"
 
 services:
   redstone:
-    build: .
+    image: hammsv/redstone-server
     volumes:
       - ~/redstone-data:/app/priv/backups
     environment:
