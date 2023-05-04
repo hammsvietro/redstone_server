@@ -33,7 +33,7 @@ defmodule RedstoneServerWeb.Tcp.Server do
         }
       )
 
-    :ok = :gen_tcp.controlling_process(socket, pid)
+    :gen_tcp.controlling_process(socket, pid)
     loop_acceptor(listen_socket)
   end
 end
