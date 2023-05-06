@@ -22,16 +22,14 @@ defmodule RedstoneServerWeb.Tcp.ConnectionHandler do
     result =
       data
       |> RedstoneServerWeb.Tcp.Controller.process()
-      |> _wrap_response()
-      |> Cyanide.encode!()
+      |> wrap_response()
+      |> serialize()
 
     :ok = :gen_tcp.send(socket, result)
     {:noreply, %{socket: socket, last_msg: data}}
   end
 
   def handle_info({:tcp_closed, _}, state) do
-    # TODO: save {upload/download}_token in gen_server state, and manage backup lock and update states here
-    # if is upload and is not completed, rollback changes
     {:stop, :normal, state}
   end
 
@@ -40,12 +38,15 @@ defmodule RedstoneServerWeb.Tcp.ConnectionHandler do
     {:stop, :normal, state}
   end
 
-  defp _wrap_response(response) do
+  defp wrap_response(response) do
     case response do
       {:error, error} -> %{status: "error", reason: error}
-      {:ok, data} -> %{status: "ok", data: data}
       :retry -> %{status: "ok", retry: true}
       :ok -> %{status: "ok"}
+      raw_data -> raw_data
     end
   end
+
+  defp serialize(data) when is_map(data), do: Cyanide.encode!(data)
+  defp serialize(data), do: data
 end

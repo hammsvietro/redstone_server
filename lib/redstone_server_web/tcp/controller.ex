@@ -76,11 +76,12 @@ defmodule RedstoneServerWeb.Tcp.Controller do
       skip = payload["offset"] * byte_limit
 
       {:ok, file} = :file.open(path, [:read, :raw])
-      :file.position(file, skip)
+      read_result = :file.pread(file, skip, byte_limit)
+      :file.close(file)
 
-      case :file.read(file, byte_limit) do
-        :eof -> {:ok, nil}
-        {:ok, data} -> {:ok, data}
+      case read_result do
+        :eof -> ""
+        {:ok, data} -> data
         error -> error
       end
     else
