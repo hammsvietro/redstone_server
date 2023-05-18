@@ -2,10 +2,20 @@
 
 This is the server of a self-hosted CLI backup tool for my final graduation project.
 
-WIP...
+[Click here](https://github.com/hammsvietro/redstone) if you’re looking for the client.
 
-To start your Phoenix server:
+## Deployment using docker compose:
 
-  * Install dependencies with `mix deps.get`
-  * Create and migrate your database with `mix ecto.setup`
-  * Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
+```bash
+mkdir ~/redstone-data -m 777
+mkdir ~/redstone-db
+
+export main_app_secret=YOUR_SECRET
+export db_name=DB_NAME
+export db_user=DB_USER
+export db_password=DB_PASSWORD
+
+docker-compose up -d
+```
+
+The server will be listening for http connections in the port 4000.
