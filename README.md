@@ -7,9 +7,6 @@ This is the server of a self-hosted CLI backup tool for my final graduation proj
 ## Deployment using docker compose:
 
 ```bash
-mkdir ~/redstone-data -m 777
-mkdir ~/redstone-db
-
 export main_app_secret=YOUR_SECRET
 export db_name=DB_NAME
 export db_user=DB_USER
