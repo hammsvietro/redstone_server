@@ -11,8 +11,16 @@ config :redstone_server,
   ecto_repos: [RedstoneServer.Repo],
   generators: [binary_id: true]
 
+dispatch = [
+  _: [
+    {"/websocket", RedstoneServerWeb.Websocket.Server, []},
+    {:_, Plug.Cowboy.Handler, {RedstoneServerWeb.Endpoint, []}}
+  ]
+]
+
 # Configures the endpoint
 config :redstone_server, RedstoneServerWeb.Endpoint,
+  http: [dispatch: dispatch],
   url: [host: "localhost"],
   render_errors: [view: RedstoneServerWeb.ErrorView, accepts: ~w(html json), layout: false],
   pubsub_server: RedstoneServer.PubSub,
